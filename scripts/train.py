@@ -6,19 +6,27 @@ import geometry_msgs.msg
 import time
 import math
 import UnfairCasino
+import pickle
+import sys
+from collections import namedtuple
 from threespace_ros.msg import dataVec
-from ghmm import*
-from UnfairCasino import train_seq
-
 
 rospy.init_node('hmm_trainer')
 alphabet = ['ff','ho','sw','hs']
-sigma = IntegerRange(1, 7)
-A = [[0.9, 0.1], [0.3, 0.7]]
-efair = [1.0/6]*6
-eloaded = [3.0 / 13, 3.0 / 13, 2.0 / 13, 2.0 / 13, 2.0 / 13, 1.0 / 13]
-B = [efair, eloaded]
-pi = [0.5] * 2
-m = HMMFromMatrices(sigma, DiscreteDistribution(sigma), A, B, pi)
-print m 
-print '*'
+DataEntry = namedtuple('DataEntry','\
+        quatx quaty quatz quatw \
+        gyrox gyroy gyroz \
+        accelx accely accelz \
+        compx compy compz \
+        label \
+        sequence')
+data = []
+if(len(sys.argv)<2):
+    exit()
+else:
+    prefix=sys.argv[1]
+print prefix+"_foot.p"
+data = pickle.load(open(prefix+"_foot.p","rb"))
+print data
+for entry in data:
+    rospy.warn("%f %f %f %s",entry.gyrox, entry.gyroy, entry.gyroz, entry.label)
