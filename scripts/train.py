@@ -25,6 +25,13 @@ DataEntry = namedtuple('DataEntry','\
         compx compy compz \
         label \
         sequence')
+featParams = namedtuple('featParams',\
+        'min \
+        max \
+        mean \
+        std' \
+        )
+
 data = []
 if(len(sys.argv)<2):
     exit()
@@ -52,8 +59,10 @@ for entry in data:
         hs_data.append(entry)
     elif entry.label == 3 :
         sw_data.append(entry)
+#GYROX
 ff_params.append(max(ff_data, key = operator.attrgetter('gyrox')).gyrox)
 ff_params.append(min(ff_data, key = operator.attrgetter('gyrox')).gyrox)
+ff_params.append(ff
 ff_params.append(max(ff_data, key = operator.attrgetter('gyroy')).gyroy)
 ff_params.append(max(ff_data, key = operator.attrgetter('gyroy')).gyroy)
 ff_params.append(min(ff_data, key = operator.attrgetter('gyroz')).gyroz)
