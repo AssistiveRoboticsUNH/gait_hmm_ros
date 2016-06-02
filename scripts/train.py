@@ -29,4 +29,4 @@ print prefix+"_foot.p"
 data = pickle.load(open(prefix+"_foot.p","rb"))
 print data
 for entry in data:
-    rospy.warn("%f %f %f %s",entry.gyrox, entry.gyroy, entry.gyroz, entry.label)
+    rospy.logwarn("%f %f %f %d %d",entry.gyrox, entry.gyroy, entry.gyroz, entry.label, entry.sequence)
