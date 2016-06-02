@@ -19,10 +19,10 @@ from collections import namedtuple
 from cv_bridge import CvBridge, CvBridgeError
 
 DataEntry = namedtuple('DataEntry','quatx quaty quatz quatw \
-        gyrox gyroy gyroz\
-        accelx accely accelz\
-        compx compy compz\
-        label,\
+        gyrox gyroy gyroz \
+        accelx accely accelz \
+        compx compy compz \
+        label \
         sequence')
 rospy.init_node('bag2pickle')
 pref = sys.argv[1]
