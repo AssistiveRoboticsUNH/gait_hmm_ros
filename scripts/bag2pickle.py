@@ -114,6 +114,7 @@ for i in range(0, total_entries):
         _ft.comX, _ft.comY, _ft.comZ,\
         -1,\
         i)
+    print ft.label
     foot.append(ft)
     try:
         cvim = bridge.imgmsg_to_cv2(im,"bgr8")
