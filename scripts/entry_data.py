@@ -13,6 +13,38 @@ DataEntry = namedtuple('DataEntry', \
         label \
         sequence'
         )
+
+class fullEntry:
+    #def __init__(self, quatx, quaty, quatz, quatw,\
+    #        gyrox, gyroy, gyroz,\
+    #        accelx, accely, accelz,\
+    #        compx, compy, compz,
+    #        label,
+    #        sequence):
+    def __init__(self):
+        self.features = []
+        self.labels = []
+        self.seq = []
+    def add(self, entry):
+        feat = [entry.quatx]
+        feat.append(entry.quaty)
+        feat.append(entry.quatz)
+        feat.append(entry.quatw)
+        feat.append(entry.gyrox)
+        feat.append(entry.gyroy)
+        feat.append(entry.gyroz)
+        feat.append(entry.accelx)
+        feat.append(entry.accely)
+        feat.append(entry.accelz)
+        feat.append(entry.compx)
+        feat.append(entry.compy)
+        feat.append(entry.compz)
+        self.features.append(feat)
+        self.labels.append(entry.label)
+        self.seq.append(entry.sequence)
+    def len(self):
+         return len(self.features)
+
 class dataParams:
     def __init__(self, **kwargs):
         self.data = kwargs.get('data',[])
