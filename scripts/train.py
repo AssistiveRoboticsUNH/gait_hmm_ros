@@ -10,27 +10,16 @@ import pickle
 import sys
 import operator
 import numpy as np
+import entry_data as ed
 from sklearn.mixture import GMM
 from collections import namedtuple
 from threespace_ros.msg import dataVec
 from matplotlib import pyplot as plt
+from entry_data import DataEntry
 
 
 rospy.init_node('hmm_trainer')
 alphabet = ['HO','FF','HS','SW']
-DataEntry = namedtuple('DataEntry','\
-        quatx quaty quatz quatw \
-        gyrox gyroy gyroz \
-        accelx accely accelz \
-        compx compy compz \
-        label \
-        sequence')
-featParams = namedtuple('featParams',\
-        'min \
-        max \
-        mean \
-        std' \
-        )
 
 data = []
 if(len(sys.argv)<2):
@@ -40,48 +29,33 @@ else:
 #print prefix+"_foot.p"
 data = pickle.load(open(prefix+"_foot.p","rb"))
 #print data
-ff_data = []
-ff_parms = []
-ho_data = []
-ho_params = []
-sw_data = []
-sw_params = []
-hs_data = []
-hs_params = []
-print max(data, key=operator.attrgetter('gyrox')).gyrox
+ho_data = ed.classData(label = 0)
+ff_data = ed.classData(label = 1)
+hs_data = ed.classData(label = 2)
+sw_data = ed.classData(label = 3)
+invalid_data = ed.classData(label = -1)
 for entry in data:
     #rospy.logwarn("%f %f %f %d %d",entry.gyrox, entry.gyroy, entry.gyroz, entry.label, entry.sequence)
     if entry.label == 0:
-        ho_data.append(entry)
+        ho_data.add(entry)
     elif entry.label == 1:
-        ff_data.append(entry)
+        ff_data.add(entry)
     elif entry.label == 2:
-        hs_data.append(entry)
+        hs_data.add(entry)
     elif entry.label == 3 :
-        sw_data.append(entry)
-#GYROX
-ff_params.append(max(ff_data, key = operator.attrgetter('gyrox')).gyrox)
-ff_params.append(min(ff_data, key = operator.attrgetter('gyrox')).gyrox)
-ff_params.append(ff
-ff_params.append(max(ff_data, key = operator.attrgetter('gyroy')).gyroy)
-ff_params.append(max(ff_data, key = operator.attrgetter('gyroy')).gyroy)
-ff_params.append(min(ff_data, key = operator.attrgetter('gyroz')).gyroz)
-ff_params.append(min(ff_data, key = operator.attrgetter('gyroz')).gyroz)
-ho_params.append(max(ho_data, key = operator.attrgetter('gyrox')).gyrox)
-ho_params.append(max(ho_data, key = operator.attrgetter('gyrox')).gyrox)
-ho_params.append(max(ho_data, key = operator.attrgetter('gyrox')).gyroy)
-ho_params.append(min(ho_data, key = operator.attrgetter('gyrox')).gyroy)
-ho_params.append(min(ho_data, key = operator.attrgetter('gyrox')).gyroz)
-ho_params.append(min(h_data, key = operator.attrgetter('gyrox')).gyroz)
-hs_params.append(max(hs_data, key = operator.attrgetter('gyrox')).gyrox)
-hs_params.append(max(hs_data, key = operator.attrgetter('gyrox')).gyrox)
-hs_params.append(max(hs_data, key = operator.attrgetter('gyrox')).gyroy)
-hs_params.append(min(hs_data, key = operator.attrgetter('gyrox')).gyroy)
-hs_params.append(min(hs_data, key = operator.attrgetter('gyrox')).gyroz)
-hs_params.append(min(hs_data, key = operator.attrgetter('gyrox')).gyroz)
-sw_params.append(max(sw_data, key = operator.attrgetter('gyrox')).gyrox)
-sw_params.append(max(sw_data, key = operator.attrgetter('gyrox')).gyrox)
-sw_params.append(max(sw_data, key = operator.attrgetter('gyrox')).gyroy)
-sw_params.append(min(sw_data, key = operator.attrgetter('gyrox')).gyroy)
-sw_params.append(min(sw_data, key = operator.attrgetter('gyrox')).gyroz)
-sw_params.append(min(sw_data, key = operator.attrgetter('gyrox')).gyroz)
+        sw_data.add(entry)
+    else:
+        invalid_data.add(entry)
+#ho_data.calcParams()
+#ff_data.calcParams()
+#hs_data.calcParams()
+#sw_data.calcOarams()
+#print invalid_data.gyrox.data
+invalid_data.calcParams()
+print invalid_data.quatx.max
+print invalid_data.quatx.min
+print invalid_data.quatx.mean
+print invalid_data.quatx.stdev
+print invalid_data.quatx.variance
+#print invalid_data.quatx.data
+
