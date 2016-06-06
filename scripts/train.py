@@ -16,6 +16,7 @@ from sklearn import mixture
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.externals.six.moves import xrange
 from sklearn.mixture import GMM
+from sklearn.mixture import VBGMM
 from collections import namedtuple
 from threespace_ros.msg import dataVec
 from matplotlib import pyplot as plt
@@ -74,12 +75,19 @@ train_index, test_index = next(iter(skf))
 #print train_index
 #print test_index
 #print full_data.features[0]
-X_train = np.array(np.array(full_data.features)[:,7:10])[train_index]
-Y_train = np.array(full_data.labels)[train_index]
-X_test = np.array(np.array(full_data.features)[:,7:10])[test_index]
-Y_test = np.array(full_data.labels)[test_index]
 
-print X_train
+limit = int(len(full_data.features)*(9.0/10.0))
+print limit
+#X_train = np.array(np.array(full_data.features)[:,7:10])[train_index]
+#Y_train = np.array(full_data.labels)[train_index]
+#X_test = np.array(np.array(full_data.features)[:,7:10])[test_index]
+#Y_test = np.array(full_data.labels)[test_index]
+
+X_train = np.array(np.array(full_data.features)[:,7:10])[0:limit]
+Y_train = np.array(full_data.labels)[0:limit]
+X_test = np.array(np.array(full_data.features)[:,7:10])[limit:]
+Y_test = np.array(full_data.labels)[limit:]
+#print X_train
 
 n_classes = len(np.unique(Y_train))
 #print n_classes
@@ -87,7 +95,7 @@ n_classes = len(np.unique(Y_train))
 classifier = GMM(n_components = 4, covariance_type = 'diag', init_params = 'wc', n_iter = 20)
 
 classifier.means_ = np.array([X_train[Y_train == i].mean(axis=0)for i in xrange(4)])
-print classifier.means_
+#print classifier.means_
 
 classifier.fit(X_train)
 y_train_pred = classifier.predict(X_train)
@@ -98,23 +106,48 @@ y_test_pred = classifier.predict(X_test)
 test_accuracy = np.mean(y_test_pred.ravel() == Y_test.ravel()) * 100
 print test_accuracy
 
-#limit = int(full_data.len()*(2.0/3.0))
-#print full_data
-#print limit
-#obs = []
-#labels = []
-#for i in range (0, limit):
-#    obs.append([ho_data.gyrox.data[i], ho_data.gyroy.data[i], ho_data.gyroz.data[i]])
-#    labels.append[]
-#for i in range (0, limit):
-#    obs.append([ff_data.gyrox.data[i], ff_data.gyroy.data[i], ff_data.gyroz.data[i]])
-#for i in range (0, limit):
-#    obs.append([hs_data.gyrox.data[i], hs_data.gyroy.data[i], hs_data.gyroz.data[i]])
-#for i in range (0, limit):
-#    obs.append([sw_data.gyrox.data[i], sw_data.gyroy.datap[i], sw_data.gyroz.data[i]])
-#obs = ho_data.gyrox.data[0:limit]
-#obs.append(ho_data.gyroy.data[0:limit])
-#obs.append(ho_data.gyroz.data[0:limit])
-#print obs
-#g.fit(obs)
-#print g
+
+prob1 = classifier.predict_proba(X_test)
+#print prob1[0]
+#print np.sum(prob1[0])
+#print prob1
+#prob2 = classifier.predict_proba(Y_test)
+#print prob2
+
+t = np.zeros((4,4))
+sum = 0
+prev = -1
+for entry in Y_train:
+	if(prev == -1):
+		prev = entry
+	t[prev][entry]+=1
+	prev = entry
+	sum += 1
+t = t/sum
+#transition probabilities
+#print t
+#print np.sum(t)
+#means
+means = classifier.means_
+#print means
+#means vector
+mean_vec = np.zeros(3)
+sum = 0
+for entry in X_train:
+	mean_vec[0] += entry[0]
+	mean_vec[1] += entry[1]
+	mean_vec[2] += entry[2]
+	sum += 1
+mean_vec = mean_vec/sum
+#print mean_vec
+
+cov = np.ma.cov(X_train, rowvar = False)
+print cov
+print cov.shape
+var_1 = np.var(X_train, axis = 0)
+print var_1
+#var_2 = np.var(X_train, axis = 1)
+#print var_2
+
+
+
