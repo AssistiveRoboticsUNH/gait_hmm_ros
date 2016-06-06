@@ -71,17 +71,17 @@ while i < len(images):
     elif k == 81:
         #LEFT
         #print("HO")
-        lower_leg[i] = lower_leg[i]._replace(label = 0)
-        upper_leg[i] = upper_leg[i]._replace(label = 0)
-        foot[i] = foot[i]._replace(label = 0)
+        lower_leg[i] = lower_leg[i]._replace(label = 1)
+        upper_leg[i] = upper_leg[i]._replace(label = 1)
+        foot[i] = foot[i]._replace(label = 1)
         rospy.logwarn("Label : %s", labels[foot[i].label])
         i += 1
     elif k == 82:
         #UP
         #print("FF")
-        lower_leg[i] = lower_leg[i]._replace(label = 1)
-        upper_leg[i] = upper_leg[i]._replace(label = 1)
-        foot[i] = foot[i]._replace(label = 1)
+        lower_leg[i] = lower_leg[i]._replace(label = 0)
+        upper_leg[i] = upper_leg[i]._replace(label = 0)
+        foot[i] = foot[i]._replace(label = 0)
         rospy.logwarn("Label : %s", labels[foot[i].label])
         i += 1
     elif k == 83:
