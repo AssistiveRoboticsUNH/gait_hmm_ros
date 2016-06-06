@@ -5,7 +5,6 @@ import tf2_ros
 import geometry_msgs.msg
 import time
 import math
-import UnfairCasino
 import pickle
 import sys
 import operator
@@ -23,10 +22,58 @@ from matplotlib import pyplot as plt
 from entry_data import DataEntry, fullEntry
 from hmmlearn import hmm
 
+rhvec = np.zeros(13)
+lhvec = np.zeros(13)
+luavec = np.zeros(13)
+
+def rhandcb(data):
+    rhvec[0] = data.quat.quaternion.x
+    rhvec[1] = data.quat.quaternion.y
+    rhvec[2] = data.quat.quaternion.z
+    rhvec[3] = data.quat.quaternion.w
+    rhvec[4] = data.gyroX
+    rhvec[5] = data.gyroY
+    rhvec[6] = data.gyroZ
+    rhvec[7] = data.accX
+    rhvec[8] = data.accY
+    rhvec[9] = data.accZ
+    rhvec[10] = data.comX
+    rhvec[11] = data.comY
+    rhvec[12] = data.comZ
+
+def lhandcb(data):
+    lhvec[0] = data.quat.quaternion.x
+    lhvec[1] = data.quat.quaternion.y
+    lhvec[2] = data.quat.quaternion.z
+    lhvec[3] = data.quat.quaternion.w
+    lhvec[4] = data.gyroX
+    lhvec[5] = data.gyroY
+    lhvec[6] = data.gyroZ
+    lhvec[7] = data.accX
+    lhvec[8] = data.accY
+    lhvec[9] = data.accZ
+    lhvec[10] = data.comX
+    lhvec[11] = data.comY
+    lhvec[12] = data.comZ
+
+def luacb(data):
+    luavec[0] = data.quat.quaternion.x
+    luavec[1] = data.quat.quaternion.y
+    luavec[2] = data.quat.quaternion.z
+    luavec[3] = data.quat.quaternion.w
+    luavec[4] = data.gyroX
+    luavec[5] = data.gyroY
+    luavec[6] = data.gyroZ
+    luavec[7] = data.accX
+    luavec[8] = data.accY
+    luavec[9] = data.accZ
+    luavec[10] = data.comX
+    luavec[11] = data.comY
+    luavec[12] = data.comZ
 
 rospy.init_node('hmm_trainer')
 alphabet = ['HO','FF','HS','SW']
-
+correct_mapping = [1, 0, 2, 3]
 data = []
 if(len(sys.argv)<2):
     exit()
@@ -34,6 +81,9 @@ else:
     prefix=sys.argv[1]
 #print prefix+"_foot.p"
 data = pickle.load(open(prefix+"_foot_annotated.p","rb"))
+data2 = pickle.load(open(prefix+"_upper_leg_annotated.p","rb"))
+data3 = pickle.load(open(prefix+"_lower_leg_annotated.p","rb"))
+
 #print data
 ho_data = ed.classData(label = 0)
 ff_data = ed.classData(label = 1)
@@ -41,35 +91,42 @@ hs_data = ed.classData(label = 2)
 sw_data = ed.classData(label = 3)
 invalid_data = ed.classData(label = -1)
 full_data = fullEntry()
+full_data2 = fullEntry()
+full_data3 = fullEntry()
 t = np.zeros((4,4))
 prev = -1
 sum = 0 
-for entry in data:
+#for entry in data:
+for i in range(0, len(data)):
     #rospy.logwarn("%f %f %f %d %d",entry.gyrox, entry.gyroy, entry.gyroz, entry.label, entry.sequence)
-    if entry.label != -1:
-        if prev == -1:
-            prev = entry.label
+    if data[i].label != -1:
+        #idata[i] = data[i]._replace(label = correct_mapping[data[i].label])
+        data[i] = data[i]._replace(label = correct_mapping[data[i].label])
+        if (prev == -1):
+            prev = data[i].label
         #print entry.label
-        if entry.label == 0:
-            ho_data.add(entry)
-        elif entry.label == 1:
-            ff_data.add(entry)
-        elif entry.label == 2:
-            hs_data.add(entry)
-        elif entry.label == 3 :
-            sw_data.add(entry)
-        t[prev][entry.label]+=1
-        prev = entry.label
-        full_data.add(entry)
+        #if data[i].label == 1:
+        #    ho_data.add(entry)
+        #elif entry.label == 0:
+        #    ff_data.add(entry)
+        #elif entry.label == 2:
+        #    hs_data.add(entry)
+        #elif entry.label == 3 :
+        #    sw_data.add(entry)
+        t[prev][data[i].label]+=1
+        prev = data[i].label
+        full_data.add(data[i])
+        full_data2.add(data2[i])
+        full_data3.add(data3[i])
         sum += 1
     else:
-        invalid_data.add(entry)
+        invalid_data.add(data[i])
 t = t/ sum
 #print t
-ho_data.calcParams()
-ff_data.calcParams()
-hs_data.calcParams()
-sw_data.calcParams()
+#ho_data.calcParams()
+#ff_data.calcParams()
+#hs_data.calcParams()
+#sw_data.calcParams()
 
 skf = StratifiedKFold(full_data.labels, n_folds = 4)
 train_index, test_index = next(iter(skf))
@@ -83,6 +140,20 @@ print limit
 #Y_train = np.array(full_data.labels)[train_index]
 #X_test = np.array(np.array(full_data.features)[:,7:10])[test_index]
 #Y_test = np.array(full_data.labels)[test_index]
+f1 = np.array(full_data.features)
+f2 = np.array(full_data2.features)
+f3 = np.array(full_data3.features)
+#print f1.shape
+#print f2.shape
+#print f3.shape
+
+f1 = np.vstack((f1,f2))
+f1 = np.vstack((f1,f3))
+print f1.shape
+#print f1
+#print f1.extend(f2)
+#f1 = (f1.extend(f2)).extend(f3)
+#f1 = np.array(f1)
 
 X_train = np.array(np.array(full_data.features)[:,7:10])[0:limit]
 Y_train = np.array(full_data.labels)[0:limit]
@@ -146,19 +217,16 @@ cov = np.ma.cov(X_train, rowvar = False)
 #print cov
 #print cov.shape
 var_1 = np.var(X_train, axis = 0)
-#print var_1
-#var_2 = np.var(X_train, axis = 1)
-#print var_2
-print("*********")
-print X_test
+
 trellis = np.zeros((4, len(X_test)))
 backpt = np.ones((4, len(X_test)))
 initialProb = [0.25, 0.25, 0.25, 0.25]
-print X_test[0]
-
-model = hmm.GMMHMM(n_components=4, n_mix=4)
+print t
+#model = hmm.GMMHMM(n_components = 4, n_mix = 4, verbose = True)
+model = hmm.GMMHMM(n_components = 4, n_mix = 4, verbose = False)
 model.transmat_ = t
-print(X_train.shape)
+model.startprob_ = np.array([0.25, 0.25, 0.25, 0.25])
+model.means_ = means
 model.fit(X_train)
 print model
 y_train_pred = model.predict(X_train)
@@ -169,3 +237,9 @@ print train_accuracy
 y_test_pred = model.predict(X_test)
 test_accuracy = np.mean(y_test_pred.ravel() == Y_test.ravel()) * 100
 print test_accuracy
+
+rospy.Subscriber("l_hand_datavec", dataVec, lhandcb)
+rospy.Subscriber("r_hand_datavec", dataVec, rhandcb)
+rospy.Subscriber("l_upper_arm_datavec", dataVec, luacb)
+while not rospy.is_shutdown():
+    rospy.spin()
