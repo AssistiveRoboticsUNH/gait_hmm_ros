@@ -21,6 +21,7 @@ from collections import namedtuple
 from threespace_ros.msg import dataVec
 from matplotlib import pyplot as plt
 from entry_data import DataEntry, fullEntry
+from hmmlearn import hmm
 
 
 rospy.init_node('hmm_trainer')
@@ -142,12 +143,29 @@ mean_vec = mean_vec/sum
 #print mean_vec
 
 cov = np.ma.cov(X_train, rowvar = False)
-print cov
-print cov.shape
+#print cov
+#print cov.shape
 var_1 = np.var(X_train, axis = 0)
-print var_1
+#print var_1
 #var_2 = np.var(X_train, axis = 1)
 #print var_2
+print("*********")
+print X_test
+trellis = np.zeros((4, len(X_test)))
+backpt = np.ones((4, len(X_test)))
+initialProb = [0.25, 0.25, 0.25, 0.25]
+print X_test[0]
 
+model = hmm.GMMHMM(n_components=4, n_mix=4)
+model.transmat_ = t
+print(X_train.shape)
+model.fit(X_train)
+print model
+y_train_pred = model.predict(X_train)
+train_accuracy = np.mean(y_train_pred.ravel() == Y_train.ravel()) * 100
 
+print train_accuracy
 
+y_test_pred = model.predict(X_test)
+test_accuracy = np.mean(y_test_pred.ravel() == Y_test.ravel()) * 100
+print test_accuracy
