@@ -143,22 +143,25 @@ print limit
 f1 = np.array(full_data.features)
 f2 = np.array(full_data2.features)
 f3 = np.array(full_data3.features)
+#f1l = np.array(full_data.labels)
+#f2l = np.array(full_data2.labels)
+#f3l = np.array(full_data3.labels)
 #print f1.shape
 #print f2.shape
 #print f3.shape
 
-f1 = np.vstack((f1,f2))
-f1 = np.vstack((f1,f3))
+f1 = np.hstack((f1,f2))
+f1 = np.hstack((f1,f3))
 print f1.shape
-#print f1
-#print f1.extend(f2)
-#f1 = (f1.extend(f2)).extend(f3)
-#f1 = np.array(f1)
 
-X_train = np.array(np.array(full_data.features)[:,7:10])[0:limit]
-Y_train = np.array(full_data.labels)[0:limit]
-X_test = np.array(np.array(full_data.features)[:,7:10])[limit:]
-Y_test = np.array(full_data.labels)[limit:]
+#X_train = np.array(np.array(full_data.features)[:,7:10])[0:limit]
+#Y_train = np.array(full_data.labels)[0:limit]
+#X_test = np.array(np.array(full_data.features)[:,7:10])[limit:]
+#Y_test = np.array(full_data.labels)[limit:]
+X_train = np.hstack((np.hstack((f1[:,7:10], f1[:,20:23])),f1[:,33:36]))[0:limit]
+Y_train = full_data.labels[0:limit]
+X_test = np.hstack((np.hstack((f1[:,7:10], f1[:,20:23])),f1[:,33:36]))[limit:]
+Y_test = full_data.labels[limit:]
 #print X_train
 
 n_classes = len(np.unique(Y_train))
@@ -166,18 +169,18 @@ n_classes = len(np.unique(Y_train))
 
 classifier = GMM(n_components = 4, covariance_type = 'diag', init_params = 'wc', n_iter = 20)
 
-classifier.means_ = np.array([X_train[Y_train == i].mean(axis=0)for i in xrange(4)])
+#classifier.means_ = np.array([X_train[Y_train == i].mean(axis=0)for i in xrange(4)])
 #print classifier.means_
 
 classifier.fit(X_train)
 y_train_pred = classifier.predict(X_train)
-train_accuracy = np.mean(y_train_pred.ravel() == Y_train.ravel()) * 100
+#Y_test = np.array(full_data.labels)[limit:]
+train_accuracy = np.mean(y_train_pred.ravel() == np.array(Y_train).ravel()) * 100
 print train_accuracy
 
 y_test_pred = classifier.predict(X_test)
-test_accuracy = np.mean(y_test_pred.ravel() == Y_test.ravel()) * 100
+test_accuracy = np.mean(y_test_pred.ravel() == np.array(Y_test).ravel()) * 100
 print test_accuracy
-
 
 prob1 = classifier.predict_proba(X_test)
 #print prob1[0]
@@ -230,12 +233,12 @@ model.means_ = means
 model.fit(X_train)
 print model
 y_train_pred = model.predict(X_train)
-train_accuracy = np.mean(y_train_pred.ravel() == Y_train.ravel()) * 100
+train_accuracy = np.mean(y_train_pred.ravel() == np.array(Y_train).ravel()) * 100
 
 print train_accuracy
 
 y_test_pred = model.predict(X_test)
-test_accuracy = np.mean(y_test_pred.ravel() == Y_test.ravel()) * 100
+test_accuracy = np.mean(y_test_pred.ravel() == np.array(Y_test).ravel()) * 100
 print test_accuracy
 
 rospy.Subscriber("l_hand_datavec", dataVec, lhandcb)
