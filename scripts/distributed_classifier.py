@@ -8,7 +8,6 @@ import time
 import math
 import pickle
 import sys
-import operator
 import numpy as np
 import entry_data as ed
 from sklearn import mixture
@@ -20,11 +19,6 @@ from sklearn.preprocessing import normalize
 from threespace_ros.msg import dataVec
 from entry_data import DataEntry, fullEntry
 from hmmlearn import hmm
-
-rul_vec = np.zeros(13)
-rll_vec = np.zeros(13)
-rf_vec = np.zeros(13)
-
 
 def create_training_data(data, imu, meas):
     ff = []
@@ -168,70 +162,10 @@ for i in range(4):
         class_means[i] = np.mean(class_data[i], axis = 0)
         class_vars[i] = np.var(class_data[i], axis = 0)
 
-#print class_means
-#print class_vars
-#print np.array(class_means).shape
 #print np.array(class_vars).shape
 ff = np.array(create_training_data(f1, use_imu, use_measurements))
-#print ff[0]
-#print f1.shape
 print ff.shape
-X_train = ff[0:limit]
-Y_train = labels[0:limit]
-X_test = ff[limit:]
-Y_test = labels[limit:]
 
-t = np.zeros((4,4))
-sum = 0
-sums = [0, 0, 0, 0]
-prev = -1
-for entry in Y_train:
-    if(prev == -1):
-        prev = entry
-        continue
-    t[prev][entry]+=1
-    #print(str(prev)+" "+str(entry))
-    sum += 1
-    sums[prev] += 1
-    prev = entry
-
-#t = t.T
-#print t
-#t = normalize(t, axis = 1, norm = 'l1')
-t = [[0.9, 0.1, 0.0, 0.0],\
-        [0.0, 0.9, 0.1, 0.0],\
-        [0.0, 0.0, 0.9, 0.1],\
-        [0.1, 0.0, 0.0, 0.9]]
-#print t
-#startprob = [float(len(class_data[0]))/float(len(f1)), float(len(class_data[1]))/float(len(f1)), float(len(class_data[2]))/ float(len(f1)), float(len(class_data[3]))/float(len(f1))]
-startprob = [0.25, 0.25, 0.25, 0.25]
-print startprob
- 
-classifier = GMM(n_components = 4, init_params = 'wc', n_iter = 1000)
-classifier.fit(X_train)
-print len(class_means[0])
-#print startprob.shape
-#model = hmm.GMMHMM(n_components = 4, n_mix = 4, covariance_type = "diag", n_iter = 1000, verbose = True, init_params = "cm")
-model = hmm.GaussianHMM(n_components = 4, covariance_type = "diag", n_iter = 1000, verbose = True, init_params = "tcm")
-#model = hmm.MultinomialHMM(n_components = 4, covariance_type = "diag", n_iter = 1000, verbose = True, init_params = "cm")
-model.startprob_  = startprob
-model.transmat_ = t
-model.means_ = class_means
-#print model.emissionprob_
-#print len(Y_train)
-#print len(X_train)
-model = model.fit(X_train, [1098])
-#model = model.fit(Y_train.reshape(-1,1), [1098])
-#print model
-sum = 0
-y_train_pred = model.predict(X_train)
-#print y_train_pred
-for i in range(0, len(X_train)):
-    if y_train_pred[i] == Y_train[i]:
-        sum += 1
-print float(sum)/float(len(f1))
-#l, dec = model.decode(X_train)
-#for i in range(0, len(dec)):
-#    print dec[i] == y_train_pred[i]
-#print y_train_pred.shape
-#print y_train_pred.shape
+n_signals = ff.shape[1]
+print n_signals
+#Y_test = np.array(full_data.labels)[limit:]
