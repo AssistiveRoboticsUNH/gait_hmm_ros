@@ -19,6 +19,9 @@ from sklearn.preprocessing import normalize
 from threespace_ros.msg import dataVec
 from entry_data import DataEntry, fullEntry
 from hmmlearn import hmm
+#from yahmm import *
+from pomegranate import*
+from pomegranate import HiddenMarkovModel as Model
 
 def create_training_data(data, imu, meas):
     ff = []
@@ -118,7 +121,7 @@ t = np.zeros((4,4))
 prev = -1
 
 alphabet = ['HO', 'FF', 'HS', 'SW']
-correct_mapping = [1, 0, 2, 3]
+correct_mapping = [1, 0, 3, 2]
 
 sum = 0
 for i in range(0, len(data)):
@@ -150,22 +153,96 @@ limit = int(len(f1)*(8/10.0))
 #print limit
 
 class_data = [[] for x in range(4)]
-for i in range (0, len(f1)):
-    class_data[labels[i]].append(f1[i])
 
-class_means = [[[] for x in range(len(class_data[0][1]))] for i in range(4)]
+#test = [[1, 1, 1],\
+#        [2, 2, 2],\
+#        [3, 3, 3]]
 
-class_vars = [[[] for x in range(len(class_data[0][1]))] for i in range(4)]
+#test2 = [[1, 1, 1],\
+#        [2, 2, 2],\
+#        [3, 3, 3]]
 
-for i in range(4):
-    for j in range(0, len(class_data[0][10])):
-        class_means[i] = np.mean(class_data[i], axis = 0)
-        class_vars[i] = np.var(class_data[i], axis = 0)
+#test3 = [[1, 1, 1],\
+#        [2, 2, 2],\
+#        [3, 3, 3]]
+#print np.array([test, test2, test3][0][0])
+#print np.array([test, test2, test3][0][1])
+#print np.array([test, test2, test3][0][2])
+#print np.array([test, test2, test3][0]).mean(axis = 0)
 
-#print np.array(class_vars).shape
 ff = np.array(create_training_data(f1, use_imu, use_measurements))
-print ff.shape
+n_signals = len(ff[0])
 
-n_signals = ff.shape[1]
-print n_signals
-#Y_test = np.array(full_data.labels)[limit:]
+print n_signals == ff.shape[1]
+
+for i in range(0, len(ff)):
+    class_data[labels[i]].append(ff[i])
+
+class_means = [[[] for x in range(n_signals)] for i in range(n_classes)]
+class_vars = [[[] for x in range(n_signals)] for i in range(n_classes)]
+class_std = [[[] for x in range(n_signals)] for i in range(n_classes)]
+
+classifiers = []
+
+for i in range (0, n_classes):
+    for j in range(0, n_signals):
+        class_means[i][j] = np.array(class_data[i][:])[:,[j]].mean(axis = 0)
+        class_vars[i][j] = np.array(class_data[i][:])[:,[j]].var(axis = 0)
+        class_std[i][j] = np.array(class_data[i][:])[:,[j]].std(axis = 0)
+
+
+#print np.array(class_means).shape
+#print np.array(class_vars).shape
+
+#for i in range(0, n_signals):
+#    model = hmm.GaussianHMM(n_components = 4, covariance_type = "diag", n_iter = 1000, verbose = True, init_params = "tcm")
+#    #model = hmm.MultinomialHMM(n_components = 4, covariance_type = "diag", n_iter = 1000, verbose = True, init_params = "cm")
+#    model.startprob_  = startprob
+#    model.transmat_ = t
+#    model.means_ = class_means[]
+
+#print np.array(class_data[0][:])[:,[0]]
+print class_means[0][0]
+print class_means[1][0]
+print class_means[2][0]
+print class_means[3][0]
+#print class_vars[0][0]
+#print class_std[0][0]
+
+t = [[0.9, 0.1, 0.0, 0.0],\
+        [0.0, 0.9, 0.1, 0.0],\
+        [0.0, 0.0, 0.9, 0.1],\
+        [0.1, 0.0, 0.0, 0.9]]
+#print t
+#startprob = [float(len(class_data[0]))/float(len(f1)), float(len(class_data[1]))/float(len(f1)), float(len(class_data[2]))/ float(len(f1)), float(len(class_data[3]))/float(len(f1))]
+#alphabet = ['FF', 'HO', 'SW', 'HS']
+correct_mapping = [1, 0, 3, 2]
+startprob = [0.25, 0.25, 0.25, 0.25]
+
+model = HiddenMarkovModel(name = "Gait_")
+dis_0 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[0]])
+dis_1 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[0]])
+dis_2 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[0]])
+dis_3 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[0]])
+ff_ = State(dis_0, name="ff")
+ho_ = State(dis_1, name="ho")
+sw_ = State(dis_2, name="sw")
+hs_ = State(dis_3, name="hs")
+states = [ff_, ho_, sw_, hs_]
+model.add_transition(model.start, ff_, 0.25)
+model.add_transition(model.start, ho_, 0.25)
+model.add_transition(model.start, sw_, 0.25)
+model.add_transition(model.start, hs_, 0.25)
+for i in range(0, n_classes):
+    for j in range(0, n_classes):
+        model.add_transition(states[i], states[j], t[i][j])
+model.bake()
+#print model.states
+sequence = ff[:,[0]]
+
+#print sequence
+#print model
+
+#model.fit(sequence, algorithm = 'viterbi')
+x = model.viterbi(sequence)
+print x[0 : 10]
