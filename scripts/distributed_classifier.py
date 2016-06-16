@@ -11,6 +11,7 @@ import sys
 import numpy as np
 import entry_data as ed
 from sklearn import mixture
+from sklearn import externals
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.externals.six.moves import xrange
 from sklearn.mixture import GMM
@@ -121,12 +122,12 @@ t = np.zeros((4,4))
 prev = -1
 
 alphabet = ['HO', 'FF', 'HS', 'SW']
-correct_mapping = [1, 0, 3, 2]
+correct_mapping = [1, 0, 2, 3]
 
 sum = 0
 for i in range(0, len(data)):
     if data[i].label != -1:
-        data[i]._replace(label = correct_mapping[data[i].label])
+        #data[i]._replace(label = correct_mapping[data[i].label])
         if (prev == -1):
             prev = data[i].label
         t[prev][data[i].label] += 1.0
@@ -202,10 +203,10 @@ for i in range (0, n_classes):
 #    model.means_ = class_means[]
 
 #print np.array(class_data[0][:])[:,[0]]
-print class_means[0][0]
-print class_means[1][0]
-print class_means[2][0]
-print class_means[3][0]
+#print class_means[0][0]
+#print class_means[1][0]
+#print class_means[2][0]
+#print class_means[3][0]
 #print class_vars[0][0]
 #print class_std[0][0]
 
@@ -213,10 +214,16 @@ t = [[0.9, 0.1, 0.0, 0.0],\
         [0.0, 0.9, 0.1, 0.0],\
         [0.0, 0.0, 0.9, 0.1],\
         [0.1, 0.0, 0.0, 0.9]]
+
+#t = [[0.9, 0.1, 0.0, 0.0],\
+#        [0.0, 0.9, 0.1, 0.0],\
+#        [0.0, 0.0, 0.9, 0.1],\
+#        [0.1, 0.0, 0.0, 0.9]]
+
+
 #print t
 #startprob = [float(len(class_data[0]))/float(len(f1)), float(len(class_data[1]))/float(len(f1)), float(len(class_data[2]))/ float(len(f1)), float(len(class_data[3]))/float(len(f1))]
 #alphabet = ['FF', 'HO', 'SW', 'HS']
-correct_mapping = [1, 0, 3, 2]
 startprob = [0.25, 0.25, 0.25, 0.25]
 
 model = HiddenMarkovModel(name = "Gait_")
@@ -236,13 +243,63 @@ model.add_transition(model.start, hs_, 0.25)
 for i in range(0, n_classes):
     for j in range(0, n_classes):
         model.add_transition(states[i], states[j], t[i][j])
-model.bake()
+        #print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
+model.bake(verbose = True)
 #print model.states
-sequence = ff[:,[0]]
-
+sequence = ff[:limit,[0]]
+#model.fit(sequence, algorithm = 'viterbi')
+trans, ems = model.forward_backward( sequence )
+#print trans
 #print sequence
 #print model
+#print len(sequence)
+#print ", ".join( state.name for i, state in model.viterbi(sequence[0:50])[1] )
+#x = model.predict(sequence, algorithm = "viterbi")
+#print ", ".join( model.states[i].name for i in model.predict(sequence, algorithm = "viterbi") )
+#print x
+#print labels
+#sum = 0.0
+#for i in x[1:]:
+#    if i == labels[i]:
+#        print "yey"
+#        sum+=1.0
+#print sum/len(labels[:limit])
 
-#model.fit(sequence, algorithm = 'viterbi')
-x = model.viterbi(sequence)
-print x[0 : 10]
+model2 = HiddenMarkovModel(name = "GMM_Gait_")
+dis_0_0 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[0]])
+dis_0_1 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[1]])
+dis_0_2 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[2]])
+mixture_a = MixtureDistribution([dis_0_0, dis_0_1, dis_0_2])
+
+dis_1_0 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[0]])
+dis_1_1 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[1]])
+dis_1_2 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[2]])
+mixture_b = MixtureDistribution([dis_1_0, dis_1_1, dis_1_2])
+
+dis_2_0 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[0]])
+dis_2_1 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[1]])
+dis_2_2 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[2]])
+mixture_c = MixtureDistribution([dis_2_0, dis_2_1, dis_2_2])
+
+dis_3_0 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[0]])
+dis_3_1 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[1]])
+dis_3_2 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[2]])
+mixture_d = MixtureDistribution([dis_3_0, dis_3_1, dis_3_2])
+
+ff_ = State(mixture_a, name="ff")
+ho_ = State(mixture_b, name="ho")
+sw_ = State(mixture_c, name="sw")
+hs_ = State(mixture_d, name="hs")
+
+model2.add_transition(model2.start, ff_, 0.25)
+model2.add_transition(model2.start, ho_, 0.25)
+model2.add_transition(model2.start, sw_, 0.25)
+model2.add_transition(model2.start, hs_, 0.25)
+states = [ff_, ho_, sw_, hs_]
+for i in range(0, n_classes):
+    for j in range(0, n_classes):
+        model2.add_transition(states[i], states[j], t[i][j])
+        print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
+model2.bake(verbose = True)
+
+print model2.states

@@ -1,0 +1,14 @@
+<launch>
+	<arg name = "prefix" default = "rec8" />
+	<arg name = "trainer" default = "param_trainer.py"/>
+	<node name = "param_trainer" pkg="gait_hmm_ros" type = "$(arg trainer)" output = "screen" required = "true" >
+		<param name = "prefix" value = "$(arg prefix)" />
+		<param name = "use_foot" value = "1" />
+		<param name = "use_lower_leg" value = "0" />
+		<param name = "use_upper_leg" value = "0" />
+		<param name = "use_quat" value = "0" />
+		<param name = "use_gyro" value = "1" />
+		<param name = "use_accel" value = "0" />
+		<param name = "use_comp" value = "0" />
+	</node>
+</launch>
