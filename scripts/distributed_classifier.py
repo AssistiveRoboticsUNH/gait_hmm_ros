@@ -7,19 +7,19 @@ import geometry_msgs.msg
 import time
 import math
 import pickle
-import sys
-import numpy as np
+#import sys
+#import numpy as np
 import entry_data as ed
-from sklearn import mixture
-from sklearn import externals
+#from sklearn import mixture
+#from sklearn import externals
 from sklearn.cross_validation import StratifiedKFold
-from sklearn.externals.six.moves import xrange
-from sklearn.mixture import GMM
-from sklearn.mixture import VBGMM
-from sklearn.preprocessing import normalize
-from threespace_ros.msg import dataVec
+#from sklearn.externals.six.moves import xrange
+#from sklearn.mixture import GMM
+#from sklearn.mixture import VBGMM
+#from sklearn.preprocessing import normalize
+#from threespace_ros.msg import dataVec
 from entry_data import DataEntry, fullEntry
-from hmmlearn import hmm
+#from hmmlearn import hmm
 #from yahmm import *
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as Model
@@ -44,6 +44,10 @@ def create_training_data(data, imu, meas):
         ff.append(f)
     return ff
 
+rul_vec = np.zeros(13)
+rll_vec = np.zeros(13)
+rf_vec = np.zeros(13)
+
 def upper_leg_cb(data):
     rul_vec[0] = data.quat.quaternion.x
     rul_vec[1] = data.quat.quaternion.y
@@ -58,7 +62,6 @@ def upper_leg_cb(data):
     rul_vec[10] = data.quat.comX
     rul_vec[11] = data.quat.comY
     rul_vec[12] = data.comZ
-
 
 def lower_leg_cb(data):
     rll_vec[0] = data.quat.quaternion.x
@@ -265,11 +268,16 @@ trans, ems = model.forward_backward( sequence )
 #        sum+=1.0
 #print sum/len(labels[:limit])
 
-model2 = HiddenMarkovModel(name = "GMM_Gait_")
+
+
+
+#model2 = HiddenMarkovModel(name = "GMM_Gait_")
+
 dis_0_0 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[0]])
 dis_0_1 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[1]])
 dis_0_2 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[2]])
 mixture_a = MixtureDistribution([dis_0_0, dis_0_1, dis_0_2])
+mgd_0 = MultivariateGaussianDistribution(dis_0_0, dis_0_1, dis_0_2)
 
 dis_1_0 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[0]])
 dis_1_1 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[1]])
@@ -291,15 +299,17 @@ ho_ = State(mixture_b, name="ho")
 sw_ = State(mixture_c, name="sw")
 hs_ = State(mixture_d, name="hs")
 
-model2.add_transition(model2.start, ff_, 0.25)
-model2.add_transition(model2.start, ho_, 0.25)
-model2.add_transition(model2.start, sw_, 0.25)
-model2.add_transition(model2.start, hs_, 0.25)
-states = [ff_, ho_, sw_, hs_]
-for i in range(0, n_classes):
-    for j in range(0, n_classes):
-        model2.add_transition(states[i], states[j], t[i][j])
-        print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
-model2.bake(verbose = True)
+#model2.add_transition(model2.start, ff_, 0.25)
+#model2.add_transition(model2.start, ho_, 0.25)
+#model2.add_transition(model2.start, sw_, 0.25)
+#model2.add_transition(model2.start, hs_, 0.25)
+#states = [ff_, ho_, sw_, hs_]
+#for i in range(0, n_classes):
+#    for j in range(0, n_classes):
+#        model2.add_transition(states[i], states[j], t[i][j])
+#        print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
+#model2.bake(verbose = True)
 
-print model2.states
+#trans, ems = model.forward_backward( sequence )
+#print trans
+#print model2.states
