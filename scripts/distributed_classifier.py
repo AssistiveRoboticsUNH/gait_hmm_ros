@@ -10,7 +10,9 @@ import pickle
 import sys
 import numpy as np
 import entry_data as ed
+from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
+from sklearn.preprocessing import normalize
 from entry_data import DataEntry, fullEntry
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
@@ -36,11 +38,17 @@ def create_training_data(data, imu, meas):
         ff.append(f)
     return ff
 
-rul_vec = np.zeros(13)
-rll_vec = np.zeros(13)
-rf_vec = np.zeros(13)
+# rul_vec = np.zeros(13)
+# rll_vec = np.zeros(13)
+# rf_vec = np.zeros(13)
 
-def upper_leg_cb(data):
+rul_vec = [0 for i in range (0, 13)]
+rll_vec = [0 for i in range (0, 13)]
+rf_vec = [0 for i in range (0, 13)]
+
+
+
+def foot_cb(data):
     rul_vec[0] = data.quat.quaternion.x
     rul_vec[1] = data.quat.quaternion.y
     rul_vec[2] = data.quat.quaternion.z
@@ -53,7 +61,7 @@ def upper_leg_cb(data):
     rul_vec[9] = data.accZ
     rul_vec[10] = data.quat.comX
     rul_vec[11] = data.quat.comY
-    rul_vec[12] = data.comZ
+    rul_vec[12] = data.qcomZ
 
 def lower_leg_cb(data):
     rll_vec[0] = data.quat.quaternion.x
@@ -96,6 +104,10 @@ if prefix == 'None':
     rospy.logerr("No filename given ,exiting")
     exit()
 
+
+rospy.Subscriber(rospy.get_param('~foot_topic', 'l_upper_arm_data_vec'), dataVec, foot_cb)
+rospy.Subscriber(rospy.get_param('~l_leg_topic', 'l_hand_data_vec'), dataVec, lower_leg_cb)
+rospy.Subscriber(rospy.get_param('~u_leg_topic', 'r_hand_data_vec'), dataVec, upper_leg_cb)
 use_imu[0] = rospy.get_param('~use_foot', 1)
 use_imu[1] = rospy.get_param('~use_lower_leg', 0)
 use_imu[2] = rospy.get_param('~use_upper_leg', 0)
@@ -135,6 +147,7 @@ for i in range(0, len(data)):
 skf = StratifiedKFold(foot_data.labels, n_folds=4)
 train_index, test_index = next(iter(skf))
 
+t = normalize(t, axis=1, norm='l1')
 f1 = np.array(foot_data.features)
 f2 = np.array(lower_leg_data.features)
 f3 = np.array(upper_leg_data.features)
@@ -145,7 +158,7 @@ f1 = np.hstack((f1, f3))
 # print f1.shape
 n_classes = 4
 
-limit = int(len(f1)*(8/10.0))
+limit = int(len(f1)*(9.5/10.0))
 # print limit
 
 class_data = [[] for x in range(4)]
@@ -172,21 +185,14 @@ for i in range(0, n_classes):
         class_vars[i][j] = np.array(class_data[i][:])[:, [j]].var(axis=0)
         class_std[i][j] = np.array(class_data[i][:])[:, [j]].std(axis=0)
 
-
-
-t = [[0.8, 0.2, 0.0, 0.0], \
-      [0.0, 0.8, 0.2, 0.0], \
-      [0.0, 0.0, 0.8, 0.2], \
-      [0.2, 0.0, 0.0, 0.8]]
-
 startprob = [0.25, 0.25, 0.25, 0.25]
 
-# t = [[0.9, 0.1, 0.0, 0.0],\
-#        [0.0, 0.9, 0.1, 0.0],\
-#        [0.0, 0.0, 0.9, 0.1],\
-#        [0.1, 0.0, 0.0, 0.9]]
+#t = [[0.7, 0.3, 0.0, 0.0],\
+#        [0.0, 0.7, 0.3, 0.0],\
+#        [0.0, 0.0, 0.7, 0.3],\
+#        [0.3, 0.0, 0.0, 0.7]]
 
-model = HMM(name="Gait")
+
 distros = []
 hmm_states = []
 state_names = ['ff', 'ho', 'sw', 'hs']
@@ -196,102 +202,75 @@ for i in range(0, n_classes):
     # print np.array(class_cov[i]).shape
     # dis = MultivariateGaussianDistribution(np.array(class_means[i]).transpose(), class_cov[i])
     dis = MGD\
-        (np.array(class_means[i]).flatten().reshape(7, 1),\
+        (np.array(class_means[i]).flatten(),\
          np.array(class_cov[i]))
+    # st = State(GMM([dis, dis]), name=state_names[i])
     st = State(dis, name=state_names[i])
     distros.append(dis)
-    print dis
+    # print dis
     # exit()
     hmm_states.append(st)
+model = HMM(name="Gait")
+# print hmm_states
+# print distros
+# exit()
+print t
 
-print hmm_states
-print distros
 # exit()
 
+model.add_states(hmm_states)
+model.add_transition(model.start, hmm_states[0], 1.00)
+model.add_transition(model.start, hmm_states[1], 0.0)
+model.add_transition(model.start, hmm_states[2], 0.0)
+model.add_transition(model.start, hmm_states[3], 0.0)
+# model.add_transition(model.start, hmm_states[0], 0.25)
+# model.add_transition(model.start, hmm_states[1], 0.25)
+# model.add_transition(model.start, hmm_states[2], 0.25)
+# model.add_transition(model.start, hmm_states[3], 0.25)
 
-model.add_transition(model.start, hmm_states[0], 0.25)
-model.add_transition(model.start, hmm_states[1], 0.25)
-model.add_transition(model.start, hmm_states[2], 0.25)
-model.add_transition(model.start, hmm_states[3], 0.25)
 for i in range(0, n_classes):
     for j in range(0, n_classes):
+        # print t[i][j]
         model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
         # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
-model.bake(verbose=True)
 
+model.bake()
 
-seq = np.array(ff[:limit][0]).flatten()
-print distros[0].log_probability(seq)
-print distros[1].log_probability(seq)
-print distros[2].log_probability(seq)
-print distros[3].log_probability(seq)
-seq = np.array(ff[:2][:])
-seq = [[4, 2, 1, 1, 1, 1, 1],[1]]
-print seq
-# print model.sample()
-# print model.states
-# print np.array(seq).shape
-# print seq
-# print model.log_probability([0.3])
-# model.fit(seq, algorithm='baum-welch')
+seq = list([ff[:limit]])
+print model.name
+print model.d
+print model.edges
+print model.silent_start
+
 # print model
-model.fit(seq, algorithm='viterbi')
-# trans, ems = model.forward_backward( sequence )
-# print model
+model.fit(seq, algorithm='baum-welch', verbose='True')
+
+# model.fit(seq, algorithm='viterbi', verbose='True')
+logp, path = model.viterbi(list(ff[limit:]))
+print len(path)
+sum_ = 0.0
+for i in range(0, len(path)):
+    if path[i][1].name != 'Gait-start' :
+        # print path[i][1].name + " " + state_names[labels[i+limit - 1]]
+        if path[i][1].name == state_names[labels[i+limit - 1]]:
+            sum_ += 1.0
+print str(sum_) + "/" + str(len(list(ff[limit:limit])))
+print sum_/float(len(list(ff[limit:])))
 print '------------------------------------'
+
+counter = 0
+stream = []
+while not rospy.is_shutdown():
+    print "lel"
+    counter += 1
+    stream.append(rul_vec + rll_vec + rf_vec)
+    if counter == 10:
+        print "new entry"
+        counter = 0
+        print stream[0]
+        print create_training_data(stream, use_imu, use_measurements)
+        stream = []
+    # rospy.spin()
 exit()
-# dis_0 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[0]])
-# dis_1 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[0]])
-# dis_2 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[0]])
-# dis_3 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[0]])
-# ff_ = State(dis_0, name="ff")
-# ho_ = State(dis_1, name="ho")
-# sw_ = State(dis_2, name="sw")
-# hs_ = State(dis_3, name="hs")
-# states = [ff_, ho_, sw_, hs_]
-# print model.states
-# model.fit(sequence, algorithm = 'viterbi')
-# trans, ems = model.forward_backward( sequence )
-
-# model2 = HiddenMarkovModel(name = "GMM_Gait_")
-
-# is_0_0 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[0]])
-# dis_0_1 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[1]])
-# dis_0_2 = NormalDistribution.from_samples(np.array(class_data[0][:])[:,[2]])
-# mixture_a = MixtureDistribution([dis_0_0, dis_0_1, dis_0_2])
-# mgd_0 = MultivariateGaussianDistribution(dis_0_0, dis_0_1, dis_0_2)
-
-# dis_1_0 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[0]])
-# dis_1_1 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[1]])
-# dis_1_2 = NormalDistribution.from_samples(np.array(class_data[1][:])[:,[2]])
-# mixture_b = MixtureDistribution([dis_1_0, dis_1_1, dis_1_2])
-
-# dis_2_0 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[0]])
-# dis_2_1 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[1]])
-# dis_2_2 = NormalDistribution.from_samples(np.array(class_data[2][:])[:,[2]])
-# mixture_c = MixtureDistribution([dis_2_0, dis_2_1, dis_2_2])
-
-# dis_3_0 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[0]])
-# dis_3_1 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[1]])
-# dis_3_2 = NormalDistribution.from_samples(np.array(class_data[3][:])[:,[2]])
-# mixture_d = MixtureDistribution([dis_3_0, dis_3_1, dis_3_2])
-
-# ff_ = State(mixture_a, name="ff")
-# ho_ = State(mixture_b, name="ho")
-# sw_ = State(mixture_c, name="sw")
-# hs_ = State(mixture_d, name="hs")
-
-# model2.add_transition(model2.start, ff_, 0.25)
-# model2.add_transition(model2.start, ho_, 0.25)
-# model2.add_transition(model2.start, sw_, 0.25)
-# model2.add_transition(model2.start, hs_, 0.25)
-# states = [ff_, ho_, sw_, hs_]
-# for i in range(0, n_classes):
-#   for j in range(0, n_classes):
-#       model2.add_transition(states[i], states[j], t[i][j])
-#       print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
-# model2.bake(verbose = True)
-
-# trans, ems = model.forward_backward( sequence )
-# print trans
 # print model2.states
+        # print path[i][1].name + " " + str(path[i][0]) + " " + str(state_names.index(path[i][1].name)) + " " + str(labels[i+limit])

@@ -4,11 +4,14 @@
 	<node name = "param_trainer" pkg="gait_hmm_ros" type = "$(arg trainer)" output = "screen" required = "true" >
 		<param name = "prefix" value = "$(arg prefix)" />
 		<param name = "use_foot" value = "1" />
-		<param name = "use_lower_leg" value = "0" />
-		<param name = "use_upper_leg" value = "0" />
+		<param name = "use_lower_leg" value = "1" />
+		<param name = "use_upper_leg" value = "1" />
 		<param name = "use_quat" value = "0" />
 		<param name = "use_gyro" value = "1" />
-		<param name = "use_accel" value = "0" />
+		<param name = "use_accel" value = "1" />
 		<param name = "use_comp" value = "0" />
+		<param name = "foot_topic" type="string" value = "l_upper_arm_data_vec" />
+		<param name = "u_leg_topic" type="string" value = "r_hand_data_vec" />
+		<param name = "l_leg_topic" type="string" value = "l_hand_data_vec" />
 	</node>
 </launch>
