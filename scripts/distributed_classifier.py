@@ -18,34 +18,34 @@ from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
 
-def create_training_data(data, imu, meas):
-    ff = []
-    for k in range(0, len(data)):
-        f =[]
-        for j in range(0, len(imu)):
-            if imu[j] == 1:
-                for i in range(0, len(meas)):
-                    if meas[i]==1:
-                        if i == 0:
-                            f.append(data[k][j*13])
-                            f.append(data[k][j*13 + 1])
-                            f.append(data[k][j*13 + 2])
-                            f.append(data[k][j*13 + 3])
+
+def create_training_data(data_, imu, meas):
+    ff_ = []
+    for k in range(0, len(data_)):
+        f_ = []
+        for jj in range(0, len(imu)):
+            if imu[jj] == 1:
+                for ii in range(0, len(meas)):
+                    if meas[ii] == 1:
+                        if ii == 0:
+                            f_.append(data_[k][jj*13])
+                            f_.append(data_[k][jj*13 + 1])
+                            f_.append(data_[k][jj*13 + 2])
+                            f_.append(data_[k][jj*13 + 3])
                         else: 
-                            f.append(data[k][j*13 + i*3 + 1])
-                            f.append(data[k][j*13 + i*3 + 2])
-                            f.append(data[k][j*13 + i*3 + 3])
-        ff.append(f)
-    return ff
+                            f_.append(data_[k][jj*13 + ii*3 + 1])
+                            f_.append(data_[k][jj*13 + ii*3 + 2])
+                            f_.append(data_[k][jj*13 + ii*3 + 3])
+        ff_.append(f_)
+    return ff_
 
 # rul_vec = np.zeros(13)
 # rll_vec = np.zeros(13)
 # rf_vec = np.zeros(13)
 
-rul_vec = [0 for i in range (0, 13)]
-rll_vec = [0 for i in range (0, 13)]
-rf_vec = [0 for i in range (0, 13)]
-
+rul_vec = [0 for i in range(0, 13)]
+rll_vec = [0 for i in range(0, 13)]
+rf_vec = [0 for i in range(0, 13)]
 
 
 def foot_cb(data):
@@ -63,6 +63,7 @@ def foot_cb(data):
     rul_vec[11] = data.quat.comY
     rul_vec[12] = data.qcomZ
 
+
 def lower_leg_cb(data):
     rll_vec[0] = data.quat.quaternion.x
     rll_vec[1] = data.quat.quaternion.y
@@ -77,6 +78,7 @@ def lower_leg_cb(data):
     rll_vec[10] = data.quat.comX
     rll_vec[11] = data.quat.comY
     rll_vec[12] = data.comZ
+
 
 def upper_leg_cb(data):
     rf_vec[0] = data.quat.quaternion.x
@@ -125,7 +127,7 @@ rospy.logwarn(use_measurements)
 upper_leg_data = fullEntry()
 lower_leg_data = fullEntry()
 foot_data = fullEntry()
-t = np.zeros((4,4))
+t = np.zeros((4, 4))
 prev = -1
 
 alphabet = ['HO', 'FF', 'HS', 'SW']
@@ -187,7 +189,7 @@ for i in range(0, n_classes):
 
 startprob = [0.25, 0.25, 0.25, 0.25]
 
-#t = [[0.7, 0.3, 0.0, 0.0],\
+# t = [[0.7, 0.3, 0.0, 0.0],\
 #        [0.0, 0.7, 0.3, 0.0],\
 #        [0.0, 0.0, 0.7, 0.3],\
 #        [0.3, 0.0, 0.0, 0.7]]
@@ -202,21 +204,15 @@ for i in range(0, n_classes):
     # print np.array(class_cov[i]).shape
     # dis = MultivariateGaussianDistribution(np.array(class_means[i]).transpose(), class_cov[i])
     dis = MGD\
-        (np.array(class_means[i]).flatten(),\
+        (np.array(class_means[i]).flatten(),
          np.array(class_cov[i]))
-    # st = State(GMM([dis, dis]), name=state_names[i])
     st = State(dis, name=state_names[i])
     distros.append(dis)
-    # print dis
-    # exit()
     hmm_states.append(st)
 model = HMM(name="Gait")
 # print hmm_states
 # print distros
-# exit()
 print t
-
-# exit()
 
 model.add_states(hmm_states)
 model.add_transition(model.start, hmm_states[0], 1.00)
@@ -230,7 +226,6 @@ model.add_transition(model.start, hmm_states[3], 0.0)
 
 for i in range(0, n_classes):
     for j in range(0, n_classes):
-        # print t[i][j]
         model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
         # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
 
@@ -244,8 +239,8 @@ print model.silent_start
 
 # print model
 model.fit(seq, algorithm='baum-welch', verbose='True')
-
 # model.fit(seq, algorithm='viterbi', verbose='True')
+
 logp, path = model.viterbi(list(ff[limit:]))
 print len(path)
 sum_ = 0.0
@@ -261,11 +256,11 @@ print '------------------------------------'
 counter = 0
 stream = []
 while not rospy.is_shutdown():
-    print "lel"
+    rospy.logwarn("Spinning")
     counter += 1
     stream.append(rul_vec + rll_vec + rf_vec)
     if counter == 10:
-        print "new entry"
+        rospy.logerr("New entry")
         counter = 0
         print stream[0]
         print create_training_data(stream, use_imu, use_measurements)
@@ -273,4 +268,5 @@ while not rospy.is_shutdown():
     # rospy.spin()
 exit()
 # print model2.states
-        # print path[i][1].name + " " + str(path[i][0]) + " " + str(state_names.index(path[i][1].name)) + " " + str(labels[i+limit])
+# print path[i][1].name + " " + str(path[i][0]) + " " +\
+#  str(state_names.index(path[i][1].name)) + " " + str(labels[i+limit])
