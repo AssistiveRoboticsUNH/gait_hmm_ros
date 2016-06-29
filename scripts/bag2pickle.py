@@ -31,9 +31,12 @@ pref = rospy.get_param('~prefix', "none")
 if pref == "none":
     rospy.logerr("No input file given, exiting")
     exit()
-
 rospack = rospkg.RosPack()
-bag = rosbag.Bag(rospack.get_path('gait_hmm_ros')+'/scripts/'+pref+'.bag')
+
+pref = rospack.get_path('gait_hmm_ros')+'/scripts/'+pref
+
+bag = rosbag.Bag(pref+'.bag')
+bridge = CvBridge()
 
 matfile = rospy.get_param('~matfile', "none")
 if matfile != "none":
@@ -41,6 +44,12 @@ if matfile != "none":
 
 joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',\
              'rw', 'ls', 'lua', 'lla', 'lw']
+
+joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',\
+                    'Left Foot', 'Left Lower Leg', 'Left Upper Leg',\
+                    'Mid', 'Chest', \
+                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',\
+                    'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
 imu_names = ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',\
              '~rw', '~ls', '~lua', '~lla', '~lw']
@@ -53,15 +62,16 @@ imu_enable = [0 for i in range(0, len(imu_names))]
 imu_topics = ["" for i in range(0, len(imu_names))]
 images = []
 image_timestamps = []
-image_indexes = []
+image_indices = []
+images_pickle_data = []
 timestamps = []
+pickle_timestamps = []
 for i in range(0, len(imu_names)):
     imu_topics[i] = rospy.get_param(imu_names[i], imu_enable[i])
 
 print imu_topics
 for topic, msg, t in bag.read_messages():
     # rospy.logerr(t)
-    print t.to_nsec()
     if topic == "/usb_cam/image_raw":
         # rospy.logerr(msg.header.stamp)
         # rospy.logerr("/usb_cam/image_raw")
@@ -82,84 +92,72 @@ for i in range(0, len(imu_vectors)):
         if len(imu_vectors[i]) < min_:
             min_ = len(imu_vectors[i])
             min_index = i
-# print min_
-# print len(images)
-# print len(imu_timestamps[3])
-
-
-# print image_timestamps
-# print imu_timestamps[3]
-
 # for topic, msg, t in bag.read_messages():
 for i in range(0, min_):
     ts = int(imu_timestamps[min_index][i])
     # print ts
     indexes = []
+    time = 0.0
+    n = 0.0
     for j in range(0, len(imu_vectors)):
         # t = imu_timestamps[j].index(min(imu_timestamps[j], key=lambda x: abs(x-ts)))
-        if(len(imu_timestamps[j])) != 0:
-            t = min(imu_timestamps[j], key=lambda x: abs(x-ts))
+        if(len(imu_vectors[j])) != 0:
+            t = imu_timestamps[j].index(min(imu_timestamps[j], key=lambda x: abs(x-ts)))
             # print t
             imu_indices[j].append(t)
+            time += imu_timestamps[j][t]
+            n += 1.0
         else:
             imu_indices[j].append(-1)
     # image_indexes.append(images.index(images[(min(image_timestamps, key=lambda x: abs(x-ts)))]))
-    image_indexes.append(image_timestamps.index((min(image_timestamps, key=lambda x: abs(x-ts)))))
-    rospy.logerr(str(i)+"/"+str(len(imu_vectors[min_index]))+":"+str(ts)+" --> "+str(t))
-for j in range(0, len(imu_vectors)):
-    print len(imu_indices[j])
-print len(image_indexes)
+    pickle_timestamps.append(time/n)
+    image_indices.append(image_timestamps.index((min(image_timestamps, key=lambda x: abs(x-ts)))))
+    # rospy.logerr(str(i)+"/"+str(len(imu_vectors[min_index]))+":"+str(ts)+" --> "+str(t))
 
-# min_ = min(map(len, imu_vectors))
-states = ['ff', 'hs', 'sw', 'ho']
-bridge = CvBridge()
+# for j in range(0, len(imu_vectors)):
+#     print len(imu_indices[j])
+# print len(image_indices)
 
 for i in range(0, min_):
     for j in range(0, len(imu_vectors)):
-        imu_pickle_data[j].append(imu_vectors[j][i])
-    # _ll = lhdv[i]
-    # _ul = rhdv[i]
-    # _ft = luadv[i]
-    # index = int(ratio*i)
-    # rospy.loginfo("%d/%d  %d/%d",i, total_entries,index, len(img))
-    # im = img[int(index)]
-    # cv_image = bridge.imgmsg_to_cv2(im, desired_encoding="passthrough")
-    # ul = DataEntry(_ul.quat.quaternion.x, _ul.quat.quaternion.y,\
-        # _ul.quat.quaternion.z, _ul.quat.quaternion.w, \
-        # _ul.gyroX, _ul.gyroY, _ul.gyroZ,\
-        # _ul.accX, _ul.accY, _ul.accZ,\
-        # _ul.comX, _ul.comY, _ul.comZ,\
-        # -1,
-        # i)
-    # upper_leg.append(ul)
-    # ll = DataEntry(_ll.quat.quaternion.x, _ll.quat.quaternion.y, \
-        # _ll.quat.quaternion.z, _ll.quat.quaternion.w, \
-        # _ll.gyroX, _ll.gyroY, _ll.gyroZ, \
-        # _ll.accX, _ll.accY, _ll.accZ,\
-        # _ll.comX, _ll.comY, _ll.comZ,\
-        # -1,
-        # i)
-    # lower_leg.append(ll)
-    #ft = DataEntry(_ft.quat.quaternion.x, _ft.quat.quaternion.y, \
-        # _ft.quat.quaternion.z, _ft.quat.quaternion.w, \
-        # _ft.gyroX, _ft.gyroY, _ft.gyroZ, \
-        # _ft.accX, _ft.accY, _ft.accZ,\
-        # _ft.comX, _ft.comY, _ft.comZ,\
-        # -1,\
-        # i)
-    # print ft.label
-    # foot.append(ft)
-    # try:
-    #    cvim = bridge.imgmsg_to_cv2(im, "bgr8")
-    #    recim.append(cvim)
-    # except CvBridgeError as e:
-    #    print(e)
+        if len(imu_vectors[j]) != 0:
+            # print imu_indices[j][i]
+            data_ = imu_vectors[j][imu_indices[j][i]]
+            p_data_ = DataEntry(data_.quat.quaternion.x, data_.quat.quaternion.y,\
+            data_.quat.quaternion.z, data_.quat.quaternion.w, \
+            data_.gyroX, data_.gyroY, data_.gyroZ,\
+            data_.accX, data_.accY, data_.accZ,\
+            data_.comX, data_.comY, data_.comZ,\
+            -1,
+            i)
+            # print p_data_
+            imu_pickle_data[j].append(p_data_)
 
-print len(imu_pickle_data[3])
-print len(foot)
-print len(lower_leg)
-print len(upper_leg)
-pickle.dump(foot, open(pref+"_foot.p", "wb"))
-pickle.dump(lower_leg, open(pref+"_lower_leg.p", "wb"))
-pickle.dump(upper_leg, open(pref+"_upper_leg.p", "wb"))
-pickle.dump(recim, open(pref+"_images.p", "wb"))
+    try:
+        cvim = bridge.imgmsg_to_cv2(images[image_indices[i]], "bgr8")
+        images_pickle_data.append(cvim)
+    except CvBridgeError as e:
+        print(e)
+# for j in range(0, len(imu_vectors)):
+#     print len(imu_vectors[j])
+# print len(image_indices)
+
+# for j in range(0, len(imu_vectors)):
+#    print len(imu_pickle_data[j])
+# print len(images_pickle_data)
+
+for j in range(0, len(imu_vectors)):
+    if len(imu_pickle_data[j]) != 0:
+        name = pref + "_" + joint_names[j] + ".p"
+        rospy.logwarn("dumping " + imu_names[j] + " to " + name)
+        pickle.dump(imu_pickle_data[j], open(name, "wb"))
+# print pickle_timestamps[80:100]
+# print "----------------------"
+# print imu_timestamps[3][80:100]
+# print len(pickle_timestamps)
+rospy.logwarn("dumping timestamps to " + pref + "_timestamps.p")
+pickle.dump(pickle_timestamps, open(pref + "_timestamps.p", "wb"))
+rospy.logwarn("dumping images to " + pref + "_images.p")
+pickle.dump(images_pickle_data, open(pref + "_images.p", "wb"))
+rospy.logerr(str(len(images_pickle_data))+" frames")
+
