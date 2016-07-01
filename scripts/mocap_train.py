@@ -25,16 +25,17 @@ def create_data(imu, meas):
     for i in range(len(imu)):
         if imu[i] != 0:
             if meas[0] == 1:
-                indexes_.append(d*13+0)
-                indexes_.append(d*13+1)
-                indexes_.append(d*13+2)
-                indexes_.append(d*13+3)
+                indexes_.append(d * 13 + 0)
+                indexes_.append(d * 13 + 1)
+                indexes_.append(d * 13 + 2)
+                indexes_.append(d * 13 + 3)
             for k in range(1, 4):
                 if meas[k] == 1:
-                    indexes_.append(d*13 + 3 + k*3)
-                    indexes_.append(d*13 + 3 + k*3 + 1)
-                    indexes_.append(d*13 + 3 + k*3 + 2)
+                    indexes_.append(d * 13 + k * 3 + 1)
+                    indexes_.append(d * 13 + k * 3 + 2)
+                    indexes_.append(d * 13 + k * 3 + 3)
             d += 1
+    print indexes_
     return indexes_
 
 rospy.init_node('mocap_train')
@@ -225,7 +226,6 @@ hmm_states = []
 
 for i in range(0, n_classes):
     dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
-    print dis
     st = State(dis, name=phase_labels[i])
     distros.append(dis)
     hmm_states.append(st)
@@ -248,15 +248,28 @@ for i in range(0, n_classes):
 model.bake()
 
 # seq = list([full_features[:limit]])
-skf = StratifiedKFold(list(full_labels), n_folds=4, shuffle=True)
+skf = StratifiedKFold(list(full_labels), n_folds=10, shuffle=True)
 # print skf[2]
+
 for train_index, test_index in skf:
-    # X_train = full_features[train_index]
-    # Y_train = full_labels[train_index]
-    # X_test = full_features[test_index]
-    # Y_test = full_labels[test_index]
-    print train_index
-    print test_index
+    X_train = full_features[train_index]
+    Y_train = full_labels[train_index]
+    X_test = full_features[test_index]
+    Y_test = full_labels[test_index]
+
+    model.fit(list([X_train]), algorithm='viterbi', verbose='False')
+
+    logp, path = model.viterbi(list(X_test))
+    sum_ = 0.0
+    path = path[1:]
+
+    for i in range(0, len(path)):
+        # print path[i][1].name + " " + phase_labels[Y_test[i]]
+        if path[i][1].name == phase_labels[Y_test[i]]:
+            sum_ += 1.0
+    print str(sum_) + "/" + str(len(Y_test))
+    print sum_/float(len(Y_test))
+    print '------------------------------------'
 exit()
 seq = list([full_features[train_index]])
 test = list([full_features[test_index]])
@@ -272,8 +285,8 @@ sum_ = 0.0
 # print class_cov[1]
 path = path[1:]
 for i in range(0, len(path)):
-    print path[i][1].name
-    print test_labels[i]
+    # print path[i][1].name
+    # print test_labels[i]
     if path[i][1].name != 'Gait-start' :
         # print path[i][1].name + " " + phase_labels[full_labels[i+limit - 1]]
         # print i+limit - 1
