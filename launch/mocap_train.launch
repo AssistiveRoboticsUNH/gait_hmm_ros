@@ -1,0 +1,26 @@
+<launch>
+    <arg name = "prefix" default = "gym5"/>
+    <node name = "mocap_train" pkg = "gait_hmm_ros" type = "mocap_train.py" output="screen" required = "true">
+        <param name = "prefix" value = "$(arg prefix)" />
+        <param name = "use_rf" type = "int" value = "0" />
+        <param name = "use_rll" type = "int" value = "0" />
+        <param name = "use_rul" type = "int" value = "0" />
+        <param name = "use_lf" type = "int" value = "1" />
+        <param name = "use_lll" type = "int" value = "1" />
+        <param name = "use_lul" type = "int" value = "1" />
+        <param name = "use_m" type = "int" value = "0" />
+        <param name = "use_ch" type = "int" value = "0" />
+        <param name = "use_ls" type = "int" value = "0" />
+        <param name = "use_rs" type = "int" value = "0" />
+        <param name = "use_rua" type = "int" value = "0" />
+        <param name = "use_rla" type = "int" value = "0" />
+        <param name = "use_rw" type = "int" value = "0" />
+        <param name = "use_lua" type = "int" value = "0" />
+        <param name = "use_lla" type = "int" value = "0" />
+        <param name = "use_lw" type = "int" value = "0" />
+		<param name = "use_quat" value = "1" />
+		<param name = "use_gyro" value = "0" />
+		<param name = "use_accel" value = "0" />
+		<param name = "use_comp" value = "0" />
+    </node>
+</launch>

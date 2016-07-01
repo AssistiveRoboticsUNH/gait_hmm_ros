@@ -8,21 +8,15 @@ import time
 import math
 import pickle
 import sys
-import operator
 import numpy as np
 import entry_data as ed
-import os.path
-from sklearn import datasets
-from sklearn import mixture
-from sklearn.cross_validation import StratifiedKFold
-from sklearn.externals.six.moves import xrange
-from sklearn.mixture import GMM
-from sklearn.mixture import VBGMM
-from collections import namedtuple
 from threespace_ros.msg import dataVec
-from matplotlib import pyplot as plt
+from sklearn.cross_validation import StratifiedKFold
+from sklearn.preprocessing import normalize
 from entry_data import DataEntry, fullEntry
-from hmmlearn import hmm
+from pomegranate import*
+from pomegranate import HiddenMarkovModel as HMM
+from pomegranate import MultivariateGaussianDistribution as MGD
 
 
 def create_data(imu, meas):
@@ -66,8 +60,6 @@ mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
 mocap_indexes = [0, 0, 0, 0]
 phase_labels = ['swing', 'stance']
 phase_indices = [0, 1]
-
-labels = ["FF", "HO", "SW", "HS"]
 
 imu_pickled_data = []
 imu_enable = [0 for i in range(0, len(imu_names))]
@@ -156,12 +148,15 @@ limit = int(len(full_features) * (9.0 / 10.0))
 
 # rospy.loginfo(limit)
 
-X_train = full_features[0:limit]
-Y_train = full_labels[0:limit]
-X_test = full_features[limit:]
-Y_test = full_labels[limit:]
+# X_train = full_features[0:limit]
+# Y_train = full_labels[0:limit]
+# X_test = full_features[limit:]
+# Y_test = full_labels[limit:]
 
-# rospy.loginfo(Y_train)
+X_train = full_features[train_index]
+Y_train = full_labels[train_index]
+X_test = full_features[test_index]
+Y_test = full_labels[test_index]
 
 cov_ = np.ma.cov(X_train, rowvar=False)
 var_ = np.var(X_train, axis=0)
@@ -193,38 +188,100 @@ class_data = [[] for x in range(n_classes)]
 for i in range(0, len(full_features)):
     class_data[full_labels[i]].append(full_features[i])
 
-print len(class_data[0])
-print len(class_data[1])
-print len(class_data[1])+len(class_data[0])
-# print np.array(class_data).shape
-# print np.array(class_data[0]).shape
-
-print len(class_data[0][1])
-exit()
 class_means = []
-for i in range(n_features):
+for i in range(n_classes):
     class_means.append([[] for x in range(n_features)])
 
-rospy.logerr(len(class_means[0]))
-rospy.logerr(len(class_means[1]))
-
 class_vars = []
-for i in range(n_features):
+for i in range(n_classes):
     class_vars.append([[] for x in range(n_features)])
 
-print len(class_vars[0])
-
+class_std = []
 for i in range(n_classes):
+    class_std.append([[] for x in range(n_features)])
+
+class_cov = []
+classifiers = []
+# FILL IN VALUES
+for i in range(n_classes):
+    cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
+    class_cov.append(cov)
     for j in range(0, n_features):
-        class_means[i] = np.mean(class_data[i], axis=0)
-        class_vars[i] = np.var(class_data[i], axis=0)
+        # class_means[i][j] = np.mean(class_data[i], axis=0)
+        # class_vars[i][j] = np.var(class_data[i], axis=0)
+        class_means[i][j] = np.array(class_data[i][:])[:, [j]].mean(axis=0)
+        class_vars[i][j] = np.array(class_data[i][:])[:, [j]].var(axis=0)
+        class_std[i][j] = np.array(class_data[i][:])[:, [j]].std(axis=0)
 
-rospy.logwarn(len(class_vars[0]))
-rospy.logwarn((class_vars[0][1]))
+# rospy.logerr("#######################################")
+rospy.logwarn("Class means shape :"+str(np.array(class_means).shape))
+# rospy.logwarn(class_means)
+rospy.logwarn("Class variances shape :"+str(np.array(class_vars).shape))
+# rospy.logwarn(class_vars)
+rospy.logwarn("Class covariances shape :" + str(np.array(class_cov).shape))
 
-rospy.loginfo(class_vars)
+distros = []
+hmm_states = []
 
+for i in range(0, n_classes):
+    dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
+    print dis
+    st = State(dis, name=phase_labels[i])
+    distros.append(dis)
+    hmm_states.append(st)
+model = HMM(name="Gait")
+
+model.add_states(hmm_states)
+model.add_transition(model.start, hmm_states[0], 0.5)
+model.add_transition(model.start, hmm_states[1], 0.5)
+
+# t = [[0.3, 0.7],
+#      [0.7, 0.3]]
+
+t = normalize(t, axis=1, norm='l1')
+
+for i in range(0, n_classes):
+    for j in range(0, n_classes):
+        model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
+        print (hmm_states[i].name+"("+str(i)+")-> "+hmm_states[j].name+"("+str(j)+") : "+str(t[i][j]))
+
+model.bake()
+
+# seq = list([full_features[:limit]])
+skf = StratifiedKFold(list(full_labels), n_folds=4, shuffle=True)
+# print skf[2]
+for train_index, test_index in skf:
+    # X_train = full_features[train_index]
+    # Y_train = full_labels[train_index]
+    # X_test = full_features[test_index]
+    # Y_test = full_labels[test_index]
+    print train_index
+    print test_index
 exit()
-model = hmm.GMMHMM(n_components=n_classes, n_mix=n_classes, verbose=True, n_iter=1000, init_params="tcm")
-model.startprob_ = startprob
-model.transmat_ = t
+seq = list([full_features[train_index]])
+test = list([full_features[test_index]])
+test_labels = full_labels[test_index]
+# print model
+# model.fit(seq, algorithm='baum-welch', verbose='True')
+model.fit(seq, algorithm='viterbi', verbose='True')
+
+# logp, path = model.viterbi(list(full_features[limit:]))
+logp, path = model.viterbi(list(full_features[test_index]))
+sum_ = 0.0
+# print class_cov[0]
+# print class_cov[1]
+path = path[1:]
+for i in range(0, len(path)):
+    print path[i][1].name
+    print test_labels[i]
+    if path[i][1].name != 'Gait-start' :
+        # print path[i][1].name + " " + phase_labels[full_labels[i+limit - 1]]
+        # print i+limit - 1
+        # if path[i][1].name == phase_labels[full_labels[i+limit - 1]]:
+        if path[i][1].name == phase_labels[test_labels[i]]:
+            sum_ += 1.0
+# print str(sum_) + "/" + str(len(list(full_labels[limit:])))
+print str(sum_) + "/" + str(len(test_labels))
+print sum_/float(len(test_labels))
+print '------------------------------------'
+exit()
