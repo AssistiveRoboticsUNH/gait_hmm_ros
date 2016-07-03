@@ -83,6 +83,7 @@ for i in range(0, len(imu_names)):
     imu_enable[i] = rospy.get_param(param, 0)
 rospy.logwarn(imu_enable)
 
+batch = rospy.get_param("~batch", 0)
 n = 0
 
 for n in range(0, n_sensors):
@@ -256,20 +257,41 @@ for train_index, test_index in skf:
     Y_train = full_labels[train_index]
     X_test = full_features[test_index]
     Y_test = full_labels[test_index]
-
     model.fit(list([X_train]), algorithm='viterbi', verbose='False')
+    if batch == 0:
+        logp, path = model.viterbi(list(X_test))
+        sum_ = 0.0
+        path = path[1:]
 
-    logp, path = model.viterbi(list(X_test))
-    sum_ = 0.0
-    path = path[1:]
+        for i in range(0, len(path)):
+            # print path[i][1].name + " " + phase_labels[Y_test[i]]
+            if path[i][1].name == phase_labels[Y_test[i]]:
+                sum_ += 1.0
+        print str(sum_) + "/" + str(len(Y_test))
+        print sum_/float(len(Y_test))
+        print '------------------------------------'
+    else:
+        b = 0
+        while b < len(X_test):
+            bb = 0
+            seq = []
+            seq_test = []
+            while bb < 10 and b < len(X_test):
+                seq.append(X_test[b])
+                seq_test.append(Y_test[b])
+                bb += 1
+                b += 1
+            logp, path = model.viterbi(list(seq))
+            sum_ = 0.0
+            path = path[1:]
+            for i in range(0, len(path)):
+                # print path[i][1].name + " " + phase_labels[Y_test[i]]
+                if path[i][1].name == phase_labels[seq_test[i]]:
+                    sum_ += 1.0
+            print str(sum_) + "/" + str(len(seq))
+            print sum_/float(len(seq))
+            print '------------------------------------'
 
-    for i in range(0, len(path)):
-        # print path[i][1].name + " " + phase_labels[Y_test[i]]
-        if path[i][1].name == phase_labels[Y_test[i]]:
-            sum_ += 1.0
-    print str(sum_) + "/" + str(len(Y_test))
-    print sum_/float(len(Y_test))
-    print '------------------------------------'
 exit()
 seq = list([full_features[train_index]])
 test = list([full_features[test_index]])
