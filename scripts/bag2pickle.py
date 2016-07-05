@@ -42,16 +42,16 @@ matfile = rospy.get_param('~matfile', "none")
 if matfile != "none":
     matfile_data = sio.loadmat(matfile)
 
-joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',\
+joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
              'rw', 'ls', 'lua', 'lla', 'lw']
 
-joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',\
-                    'Left Foot', 'Left Lower Leg', 'Left Upper Leg',\
-                    'Mid', 'Chest', \
-                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',\
+joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg'
+                    'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
+                    'Mid', 'Chest',
+                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
                     'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
-imu_names = ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',\
+imu_names = ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',
              '~rw', '~ls', '~lua', '~lla', '~lw']
 
 imu_vectors = [[] for i in range(0, len(imu_names))]
@@ -66,10 +66,11 @@ image_indices = []
 images_pickle_data = []
 timestamps = []
 pickle_timestamps = []
+
 for i in range(0, len(imu_names)):
     imu_topics[i] = rospy.get_param(imu_names[i], imu_enable[i])
+    rospy.logwarn(joint_names_full[i]+" topic : "+imu_topics[i])
 
-print imu_topics
 for topic, msg, t in bag.read_messages():
     # rospy.logerr(t)
     if topic == "/usb_cam/image_raw":
@@ -123,13 +124,13 @@ for i in range(0, min_):
         if len(imu_vectors[j]) != 0:
             # print imu_indices[j][i]
             data_ = imu_vectors[j][imu_indices[j][i]]
-            p_data_ = DataEntry(data_.quat.quaternion.x, data_.quat.quaternion.y,\
-            data_.quat.quaternion.z, data_.quat.quaternion.w, \
-            data_.gyroX, data_.gyroY, data_.gyroZ,\
-            data_.accX, data_.accY, data_.accZ,\
-            data_.comX, data_.comY, data_.comZ,\
-            -1,
-            i)
+            p_data_ = DataEntry(data_.quat.quaternion.x, data_.quat.quaternion.y,
+                                data_.quat.quaternion.z, data_.quat.quaternion.w,
+                                data_.gyroX, data_.gyroY, data_.gyroZ,
+                                data_.accX, data_.accY, data_.accZ,
+                                data_.comX, data_.comY, data_.comZ,
+                                -1,
+                                i)
             # print p_data_
             imu_pickle_data[j].append(p_data_)
 

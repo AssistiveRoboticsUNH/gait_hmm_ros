@@ -93,6 +93,7 @@ matfile = rospy.get_param('~matfile', "none")
 if matfile != "none":
     matfile_data = sio.loadmat(path+matfile)
 
+
 joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
                'rw', 'ls', 'lua', 'lla', 'lw']
 
@@ -105,15 +106,22 @@ joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
                     'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
                     'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
+keys = [27, 81, 82, 83, 84, 114, 115, 99]
+
 imu_pickled_data = []
 
 bridge = CvBridge()
 
 ano = cv2.imread(path+"ano.png")
+aano = cv2.imread(path+"aano.png")
 ano = cv2.resize(ano, (640, 480))
+aano = cv2.resize(aano, (640, 480))
 total_entries = 0
 total_sensors = len(imu_names)
 
+#####################
+# Load enabled IMUS #
+#####################
 for name in joint_names:
     fullname = pref+"_"+name+".p"
     if os.path.isfile(fullname):
@@ -125,35 +133,44 @@ for name in joint_names:
     else:
         imu_pickled_data.append([])
 
+rospy.logwarn("Loading timestamps from "+pref+"_timestamps.p")
 imu_timestamps = pickle.load(open(pref+"_timestamps.p", "rb"))
+rospy.logwarn("Loading images from "+pref+"_images.p")
+images = pickle.load(open(pref+"_images.p", "rb"))
 rl_timestamps = []
+#############################################
+# Transform ROS timestamps to duration from #
+# start of recording                        #
+#############################################
 for i in imu_timestamps:
     rl_timestamps.append(abs(i - imu_timestamps[0])/1000000000)
 
-lhs = matfile_data['LHS'][0][0]
-lto = matfile_data['LTO'][0][0]
-rhs = matfile_data['RHS'][0][0]
-rto = matfile_data['RTO'][0][0]
+# start_frame = min(matfile_data['LHS'][0], matfile_data['LHS'], matfile_data['LHS'], matfile_data['LHS'][0])
+mocap_data = []
+
 
 mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
 mocap_indexes = [0, 0, 0, 0]
-mocap_lists = [lhs, lto, rhs, rto]
 phase_labels_a = ['swing', 'stance']
 phase_indices_a = [0, 1]
 phase_labels_b = ['lswing', 'lstance', 'rswing', 'rstance']
-mocap_data = []
 
-mocap_size = len(lhs)+len(lto)+len(rhs)+len(rto)
-
-first_row = (lhs[0], lto[0], rhs[0], rto[0])
-rospy.loginfo("First Row : " + str(first_row))
-start_label = mocap_labels[first_row.index(min(first_row))]
-rospy.loginfo("Start Label : " + start_label)
-start_index = mocap_labels.index(start_label)
-rospy.loginfo("Start Index : " + str(start_index))
-# start_frame = min(matfile_data['LHS'][0], matfile_data['LHS'], matfile_data['LHS'], matfile_data['LHS'][0])
-i = 0
 if auto == "True":
+    mocap_lists = [lhs, lto, rhs, rto]
+
+    mocap_size = len(lhs)+len(lto)+len(rhs)+len(rto)
+
+    first_row = (lhs[0], lto[0], rhs[0], rto[0])
+    rospy.loginfo("First Row : " + str(first_row))
+    start_label = mocap_labels[first_row.index(min(first_row))]
+    rospy.loginfo("Start Label : " + start_label)
+    start_index = mocap_labels.index(start_label)
+    rospy.loginfo("Start Index : " + str(start_index))
+    ######################################
+    # SCRIPT WILL TRANSFORM THE MAT FILE #
+    # TO AN ARRAY WITH SEQUENTIAL  GAIT  #
+    # EVENTS AND TIMESTAMPS              #
+    ######################################
     while i < mocap_size:
         current_index = start_index % 4
         mocap_data.append((mocap_labels[current_index], mocap_lists[current_index][mocap_indexes[current_index]]))
@@ -164,9 +181,90 @@ if auto == "True":
     start_mocap = mocap_data[0][1]
     end_mocap = mocap_data[mocap_size-1][1]
 
+else:
+    #######################################
+    # USER HAS TO ANNOTATE SINGLE EVENTS  #
+    # MEANING 1 FRAME IN TURN FOR EACH OF #
+    # LHS, LTO, RTO, RHS, SKIPPING FRAMES #
+    # BETWEEN THEM, BEFORE USING THE SAME #
+    # TAG AGAIN                           #
+    #######################################
+    i = 0
+    data_index = 0
+    while i < total_entries:
+        print("Frame #" + str(i) + "/" + str(total_entries))
+        vis = np.concatenate((images[i], aano), axis=1)
+        cv2.imshow("Annotation Window", vis)
+        k = cv2.waitKey(0)
+        k &= 255
+        rospy.logwarn(k)
+        while k not in keys:
+            rospy.logerr("Waiting for correct key")
+            k = cv2.waitKey(0)
+            print k
+        rospy.loginfo("Key : " + str(k))
+
+        if k == 27:
+            cv2.destroyAllWindows()
+            exit()
+        elif k == 81:
+            # LEFT
+            # LHS
+            current_index = 0
+            mocap_data.append((mocap_labels[current_index], rl_timestamps[data_index]))
+            data_index += 1
+            i += 1
+        elif k == 82:
+            # UP
+            # LTO
+            current_index = 1
+            mocap_data.append((mocap_labels[current_index], rl_timestamps[data_index]))
+            data_index += 1
+            i += 1
+        elif k == 83:
+            # RHS
+            # RIGHT
+            current_index = 2
+            mocap_data.append((mocap_labels[current_index], rl_timestamps[data_index]))
+            data_index += 1
+            i += 1
+        elif k == 84:
+            # RTO
+            # DOWN
+            current_index = 3
+            mocap_data.append((mocap_labels[current_index], rl_timestamps[data_index]))
+            data_index += 1
+            i += 1
+        elif k == 114:
+            # R
+            # GO BACK 10 frames
+            rospy.logerr("Rewind 10 frames")
+            i -= 10
+            if i < 0:
+                i = 0
+        elif k == 99:
+            # C
+            # Skip Frame
+            rospy.logwarn("Skipped Frame")
+            i += 1
+        elif k == 115:
+            # S
+            # save
+            for i in range(0, total_sensors):
+                if len(imu_pickled_data[i]) != 0:
+                    rospy.logwarn("Dumping "+joint_names[i]+" to " + pref+"_"+joint_names[i] + ".p")
+                    pickle.dump(imu_pickled_data[i], open(pref+"_"+joint_names[i] + ".p", "wb"))
+
 i = 0
 lower_index = 0
 upper_index = 0
+
+###############################################
+# FOR EACH ROS IMU TIMESTAMP                  #
+# TRY TO FIND WHICH MOCAP EVENT IT IS BETWEEN #
+# AND ASSIGN CORRESPONDING LABEL              #
+###############################################
+
 while i < total_entries:
     # rospy.loginfo("#"+str(i)+": Lower Index :"+str(lower_index)+", Upper Index :"+str(upper_index))
     if rl_timestamps[i] < mocap_data[0][1]:
@@ -197,12 +295,6 @@ while i < total_entries:
                 imu_pickled_data[j][i] = imu_pickled_data[j][i]._replace(label=phase_labels_a.index(
                     assign_label_a(str(mocap_data[lower_index][0]), str(mocap_data[upper_index][0]))))
     i += 1
-# for i in range(0, len(mocap_data)):
-#        rospy.loginfo(str(mocap_data[i][0])+":"+str(mocap_data[i][1]))
-# for i in range(0, total_entries):
-#     for j in range(0, total_sensors):
-#         if len(imu_pickled_data[j]) != 0:
-#             rospy.logwarn(str(imu_pickled_data[j][i].label))
 
 for i in range(0, total_sensors):
     if len(imu_pickled_data[i]) != 0:

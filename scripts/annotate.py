@@ -4,7 +4,7 @@ import rospy
 import pickle
 import time
 import math
-import string 
+import string
 import sys
 import cv2
 import geometry_msgs.msg
@@ -21,8 +21,10 @@ from cv_bridge import CvBridge, CvBridgeError
 def addToChart(list, foot, lower, upper):
     data[0].append(foot.quat)
     return
-DataEntry = namedtuple('DataEntry',\
-        'quatx quaty quatz quatw \
+
+
+DataEntry = namedtuple('DataEntry', \
+                       'quatx quaty quatz quatw \
         gyrox gyroy gyroz \
         accelx accely accelz \
         compx compy compz \
@@ -34,18 +36,18 @@ pref = sys.argv[1]
 images = []
 bridge = CvBridge()
 
-images = pickle.load(open(pref+"_images.p", "r"))
-lower_leg = pickle.load(open(pref+"_lower_leg.p","rb"))
-upper_leg = pickle.load(open(pref+"_upper_leg.p","rb"))
-foot = pickle.load(open(pref+"_foot.p","rb"))
+images = pickle.load(open(pref + "_images.p", "r"))
+lower_leg = pickle.load(open(pref + "_lower_leg.p", "rb"))
+upper_leg = pickle.load(open(pref + "_upper_leg.p", "rb"))
+foot = pickle.load(open(pref + "_foot.p", "rb"))
 
 ano = cv2.imread("ano.png")
 ano = cv2.resize(ano, (640, 480))
 i = 0
-ff_ = [[] for i in range(7*3)]
-ho_ = [[] for i in range(7*3)]
-sw_ = [[] for i in range(7*3)]
-hs_ = [[] for i in range(7*3)]
+ff_ = [[] for i in range(7 * 3)]
+ho_ = [[] for i in range(7 * 3)]
+sw_ = [[] for i in range(7 * 3)]
+hs_ = [[] for i in range(7 * 3)]
 if len(sys.argv) == 3:
     if sys.argv[2] == 'c':
         rospy.logwarn("Loading Annotations")
@@ -58,14 +60,14 @@ if len(sys.argv) == 3:
             lower_leg[i] = lower_leg[i]._replace(label=-1)
             upper_leg[i] = upper_leg[i]._replace(label=-1)
         i = 0
-#cv2.NamedWindow("Annotation Window", 1)
-keys =[27, 81, 82, 83, 84, 114, 115, 99]
+# cv2.NamedWindow("Annotation Window", 1)
+keys = [27, 81, 82, 83, 84, 114, 115, 99]
 labels = ["FF", "HO", "SW", "HS"]
 total_entries = len(images)
 
 if sys.argv[2] == 'v':
     while (i < total_entries - 10) and (i >= 0):
-        print("Frame #"+str(i)+"/"+str(total_entries))
+        print("Frame #" + str(i) + "/" + str(total_entries))
         plt_data = []
         plt_data.append(foot[i].quatx)
         plt_data.append(foot[i].quaty)
@@ -95,7 +97,7 @@ if sys.argv[2] == 'v':
         k &= 255
 
         plt.figure()
-        plt.ylim(ymax = 7, ymin = -7)
+        plt.ylim(ymax=7, ymin=-7)
         plt.title(labels[foot[i].label])
         plt.bar(np.arange(len(plt_data)), plt_data)
         # plt.show(block=False)
@@ -107,7 +109,6 @@ if sys.argv[2] == 'v':
         cv2.imshow("Annotation Window", vis)
         k = cv2.waitKey(0)
         k &= 255
-
 
         if k == 83:
             # RIGHT
@@ -121,7 +122,7 @@ if sys.argv[2] == 'v':
 
     exit()
 while i < total_entries:
-    print("Frame #"+str(i)+"/"+str(total_entries))
+    print("Frame #" + str(i) + "/" + str(total_entries))
     # print images[i].shape
     vis = np.concatenate((images[i], ano), axis=1)
     # cv2.imshow("Annotation Window", images[i])
@@ -131,8 +132,8 @@ while i < total_entries:
     while k & 255 not in keys:
         print("Waiting for correct key")
         k = cv2.waitKey(0)
-        print k&255
-    print("Key : " + str(k&255))
+        print k & 255
+    print("Key : " + str(k & 255))
     # k = cv2.waitKey(0)
     k &= 255
     if k == 27:
@@ -188,14 +189,13 @@ while i < total_entries:
         # pickle.dump(lower_leg, open(pref+"_lower_leg_annotated.p","wb"))
         # pickle.dump(upper_leg, open(pref+"_upper_leg_annotated.p","wb"))
         # pickle.dump(foot, open(pref+"_foot_annotated.p","wb"))
-        pickle.dump(lower_leg, open(pref+"_lower_leg.p", "wb"))
-        pickle.dump(upper_leg, open(pref+"_upper_leg.p", "wb"))
-        pickle.dump(foot, open(pref+"_foot.p", "wb"))
+        pickle.dump(lower_leg, open(pref + "_lower_leg.p", "wb"))
+        pickle.dump(upper_leg, open(pref + "_upper_leg.p", "wb"))
+        pickle.dump(foot, open(pref + "_foot.p", "wb"))
         rospy.logerr("Saved")
         # i = i-1
         if i < 0:
             i = 0
-    pickle.dump(lower_leg, open(pref+"_lower_leg_annotated.p", "wb"))
-    pickle.dump(upper_leg, open(pref+"_upper_leg_annotated.p", "wb"))
-    pickle.dump(foot, open(pref+"_foot_annotated.p", "wb"))
-
+    pickle.dump(lower_leg, open(pref + "_lower_leg_annotated.p", "wb"))
+    pickle.dump(upper_leg, open(pref + "_upper_leg_annotated.p", "wb"))
+    pickle.dump(foot, open(pref + "_foot_annotated.p", "wb"))

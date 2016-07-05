@@ -162,9 +162,13 @@ class_data = [[] for x in range(4)]
 for i in range(0, len(f1)):
     class_data[labels[i]].append(f1[i])
 
-class_means = [[[] for x in range(len(class_data[0][1]))] for i in range(4)]
+class_means = []
+for i in range(4):
+    class_means.append([[] for x in range(len(class_data[0][1]))])
 
-class_vars = [[[] for x in range(len(class_data[0][1]))] for i in range(4)]
+class_vars = []
+for i in range(4):
+    class_vars.append([[] for x in range(len(class_data[0][1]))])
 
 for i in range(4):
     for j in range(0, len(class_data[0][10])):
