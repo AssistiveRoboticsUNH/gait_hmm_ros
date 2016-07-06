@@ -9,6 +9,7 @@ import string
 import sys
 import cv2
 import os.path
+import imu_callbacks as iparam
 import geometry_msgs.msg
 import std_msgs.msg
 import sensor_msgs.msg
@@ -143,17 +144,21 @@ if matfile != "none":
 
 leg = rospy.get_param("~leg", "left")
 
-joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
-               'rw', 'ls', 'lua', 'lla', 'lw']
+joint_names = iparam.imu_names
+# ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
+#                'rw', 'ls', 'lua', 'lla', 'lw']
 
-imu_names = ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',
-             '~rw', '~ls', '~lua', '~lla', '~lw']
+imu_names = iparam.imu_param_names
+# ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',
+#          '~rw', '~ls', '~lua', '~lla', '~lw']
 
-joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
-                    'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
-                    'Mid', 'Chest',
-                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
-                    'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
+joint_names_full = iparam.imu_names_full
+
+# joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
+#                    'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
+#                    'Mid', 'Chest',
+#                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
+#                    'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
 keys = [27, 81, 82, 83, 84, 114, 115, 99]
 

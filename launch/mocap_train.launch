@@ -26,5 +26,21 @@
 		<param name = "use_gyro" value = "1" />
 		<param name = "use_accel" value = "0" />
 		<param name = "use_comp" value = "0" />
+        <param name = "rf" type = "string" value = "" />
+		<param name = "rll" type = "string" value = "" />
+		<param name = "rul" type = "string" value = "" />
+		<param name = "lf" type = "string" value = "l_upper_arm_data_vec" />
+		<param name = "lll" type = "string" value = "l_hand_data_vec" />
+		<param name = "lul" type = "string" value = "r_hand_data_vec" />
+		<param name = "m" type = "string" value = "l_lower_arm_data_vec" />
+		<param name = "ch" type = "string" value = "r_lower_arm_data_vec" />
+		<param name = "ls" type = "string" value = "" />
+		<param name = "rs" type = "string" value = "" />
+		<param name = "rua" type = "string" value = "" />
+		<param name = "rla" type = "string" value = "" />
+		<param name = "rw" type = "string" value = "" />
+		<param name = "lua" type = "string" value = "" />
+		<param name = "lla" type = "string" value = "" />
+		<param name = "lw" type = "string" value = "" />
     </node>
 </launch>

@@ -8,9 +8,10 @@ import time
 import math
 import pickle
 import sys
+import operator
 import numpy as np
 import entry_data as ed
-import operator
+import imu_callbacks as iparam
 from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import normalize
@@ -47,18 +48,24 @@ rospack = rospkg.RosPack()
 path = rospack.get_path('gait_hmm_ros')+'/scripts/'
 pref = path + pref
 
-imu_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
-             'rw', 'ls', 'lua', 'lla', 'lw']
+# imu_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
+#             'rw', 'ls', 'lua', 'lla', 'lw']
+
+imu_names = iparam.imu_names
+
+topic_names = ["" for i in range(0, len(imu_names))]
 joints_enable = [0 for i in range(0, len(imu_names))]
 
 meas_names = ['quat', 'gyro', 'accel', 'comp']
 meas_enable = [0 for i in range(0, len(meas_names))]
 
-imu_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
-                  'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
-                  'Mid', 'Chest',
-                  'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
-                  'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
+imu_names_full = iparam.imu_names_full
+
+# imu_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
+#                  'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
+#                  'Mid', 'Chest',
+#                  'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
+#                  'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
 mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
 mocap_indexes = [0, 0, 0, 0]
@@ -70,20 +77,29 @@ imu_enable = [0 for i in range(0, len(imu_names))]
 
 total_entries = 0
 total_sensors = len(imu_names)
-vector_sizes = [0 for i in range (0, total_sensors)]
+vector_sizes = [0 for i in range(0, total_sensors)]
 
 n_classes = len(phase_labels)
 n_sensors = len(imu_names)
 t = np.zeros((n_classes, n_classes))
+
 
 for i in range(0, len(meas_names)):
     param = "~use_"+meas_names[i]
     meas_enable[i] = rospy.get_param(param, 0)
 rospy.logwarn(meas_enable)
 
+
+subscribers = []
+dv_indexes = []
 for i in range(0, len(imu_names)):
     param = "~use_"+imu_names[i]
     imu_enable[i] = rospy.get_param(param, 0)
+    if imu_enable[i] == 1:
+        topic_names[i] = rospy.get_param("~"+imu_names[i])
+        sub = rospy.Subscriber(topic_names[i], dataVec, iparam.imu_callbacks[i])
+        subscribers.append(sub)
+        dv_indexes.append(i)
 rospy.logwarn(imu_enable)
 
 batch = rospy.get_param("~batch", 0)
@@ -107,9 +123,6 @@ imu_timestamps = pickle.load(open(pref+"_timestamps.p", "rb"))
 rl_timestamps = []
 for i in imu_timestamps:
     rl_timestamps.append(abs(i - imu_timestamps[0])/1000000000)
-
-# phase_labels = ['lswing', 'lstance', 'rswing', 'rstance']
-# phase_labels = [0, 1, 2, 3]
 
 full_data = [fullEntry() for i in range(0, n_sensors)]
 
@@ -295,6 +308,35 @@ if dis == 0:
                 print sum_/float(len(seq))
                 print '------------------------------------'
 
+        live_data = []
+        while not rospy.is_shutdown():
+            ar = []
+            for ind in dv_indexes:
+                ar.append(iparam.dataVectors[ind])
+            live_data.append(arr)
+            if len(live_data) == 10:
+                for f in range(0, n_features):
+                    # print np.array(seq)[:, 0]
+                    logp, path = hmm_table[f].viterbi(np.array(live_data)[:, f])
+                    # logp, path = hmm_table[f].viterbi(list(X_test))
+                    sum_ = 0.0
+                    path = path[1:]
+                    paths.append(path)
+                    # print sum_/float(len(Y_test))
+
+                for p in range(0, len(path)):
+                    counts = [0 for i in range(0, n_classes)]
+                    # print path[i][1].name + " " + phase_labels[Y_test[i]]
+                    for f in range(0, n_features):
+                        counts[phase_labels.index(paths[f][p][1].name)] += 1
+                    # print counts
+                    index, value = max(enumerate(counts), key=operator.itemgetter(1))
+                    name = phase_labels[index]
+                    rospy.logwarn(name)
+                    # if path[i][1].name == phase_labels[Y_test[i]]:
+                print '------------------------------------'
+                live_data = []
+
 else:
     hmm_table = []
     for i in range(0, n_features):
@@ -369,6 +411,7 @@ else:
             print str(sum_) + "/" + str(len(Y_test))
             print sum_/float(len(Y_test))
             print '------------------------------------'
+
         else:
             b = 0
             # print X_test
@@ -408,31 +451,31 @@ else:
                 print sum_/float(len(seq_test))
                 print '------------------------------------'
 
-exit()
-seq = list([full_features[train_index]])
-test = list([full_features[test_index]])
-test_labels = full_labels[test_index]
-# print model
-# model.fit(seq, algorithm='baum-welch', verbose='True')
-model.fit(seq, algorithm='viterbi', verbose='True')
+        live_data = []
+        while not rospy.is_shutdown():
+            ar = []
+            for ind in dv_indexes:
+                ar.append(iparam.dataVectors[ind])
+            live_data.append(arr)
+            if len(live_data) == 10:
+                for f in range(0, n_features):
+                    # print np.array(seq)[:, 0]
+                    logp, path = hmm_table[f].viterbi(np.array(live_data)[:, f])
+                    # logp, path = hmm_table[f].viterbi(list(X_test))
+                    sum_ = 0.0
+                    path = path[1:]
+                    paths.append(path)
+                    # print sum_/float(len(Y_test))
 
-# logp, path = model.viterbi(list(full_features[limit:]))
-logp, path = model.viterbi(list(full_features[test_index]))
-sum_ = 0.0
-# print class_cov[0]
-# print class_cov[1]
-path = path[1:]
-for i in range(0, len(path)):
-    # print path[i][1].name
-    # print test_labels[i]
-    if path[i][1].name != 'Gait-start' :
-        # print path[i][1].name + " " + phase_labels[full_labels[i+limit - 1]]
-        # print i+limit - 1
-        # if path[i][1].name == phase_labels[full_labels[i+limit - 1]]:
-        if path[i][1].name == phase_labels[test_labels[i]]:
-            sum_ += 1.0
-# print str(sum_) + "/" + str(len(list(full_labels[limit:])))
-print str(sum_) + "/" + str(len(test_labels))
-print sum_/float(len(test_labels))
-print '------------------------------------'
-exit()
+                for p in range(0, len(path)):
+                    counts = [0 for i in range(0, n_classes)]
+                    # print path[i][1].name + " " + phase_labels[Y_test[i]]
+                    for f in range(0, n_features):
+                        counts[phase_labels.index(paths[f][p][1].name)] += 1
+                    # print counts
+                    index, value = max(enumerate(counts), key=operator.itemgetter(1))
+                    name = phase_labels[index]
+                    rospy.logwarn(name)
+                    # if path[i][1].name == phase_labels[Y_test[i]]:
+                print '------------------------------------'
+                live_data = []
