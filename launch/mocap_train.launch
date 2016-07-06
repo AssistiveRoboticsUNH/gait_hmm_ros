@@ -1,16 +1,18 @@
 <launch>
     <arg name = "prefix" default = "gym5"/>
-    <aeg name = "batch" default = "0"/>
+    <arg name = "batch" default = "0"/>
+    <arg name = "dis" default = "0"/>
     <node name = "mocap_train" pkg = "gait_hmm_ros" type = "mocap_train.py" output="screen" required = "true">
         <param name = "batch" value = "$(arg batch)"/>
         <param name = "prefix" value = "$(arg prefix)" />
+        <param name = "dis" type = "int" value = "$(arg dis)" />
         <param name = "use_rf" type = "int" value = "0" />
         <param name = "use_rll" type = "int" value = "0" />
         <param name = "use_rul" type = "int" value = "0" />
-        <param name = "use_lf" type = "int" value = "0" />
-        <param name = "use_lll" type = "int" value = "0" />
+        <param name = "use_lf" type = "int" value = "1" />
+        <param name = "use_lll" type = "int" value = "1" />
         <param name = "use_lul" type = "int" value = "1" />
-        <param name = "use_m" type = "int" value = "1" />
+        <param name = "use_m" type = "int" value = "0" />
         <param name = "use_ch" type = "int" value = "0" />
         <param name = "use_ls" type = "int" value = "0" />
         <param name = "use_rs" type = "int" value = "0" />

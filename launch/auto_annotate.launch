@@ -2,9 +2,11 @@
     <arg name = "prefix" default = "gym5" />
     <arg name = "matfile" default = "none" />
     <arg name = "auto" default = "False" />
+    <arg name = "leg" default = "left"/>
     <node name = "auto_annotate" pkg="gait_hmm_ros" type = "auto_annotate.py" output = "screen" required = "true" >
         <param name = "prefix" value = "$(arg prefix)" />
         <param name = "matfile" type = "string" value = "$(arg matfile)" />
-        <param name = "auto" type="string" value = "$(arg auto)"/>
+        <param name = "auto" type = "string" value = "$(arg auto)" />
+        <param name = "leg" type = "string" value = "$(arg leg)" />
     </node>
 </launch>

@@ -29,27 +29,75 @@ DataEntry = namedtuple('DataEntry',
                         sequence')
 
 
-def assign_label_a(lower, upper):
+def assign_label_a(lower, upper, leg):
+    # if leg == left:
     if lower == 'LTO':
         if upper == 'LTO' or upper == 'LHS':
-            return 'swing'
+            if leg == left:
+                return 'swing'
+            else:
+                return 'stance'
         else:
-            return 'stance'
+            if leg == left:
+                return 'stance'
+            else:
+                return 'swing'
     if lower == 'LHS':
         if upper == 'LHS' or upper == 'RTO' or upper == 'RHS':
-            return 'stance'
+            if leg == left:
+                return 'stance'
+            else:
+                return 'swing'
         else:
-            return 'swing'
+            if leg == left:
+                return 'swing'
+            else:
+                return 'stance'
     if lower == 'RTO':
-        if upper == 'RTO' or upper == 'RTS' or upper == 'LTO':
-            return 'swing'
+        # if upper == 'RTO' or upper == 'RTS' or upper == 'LTO':
+        if upper == 'RTO' or upper == 'RHS':  # or upper == 'LTO'
+            if leg == left:
+                return 'stance'
+            else:
+                return 'swing'
         else:
-            return 'stance'
+            if leg == left:
+                return 'swing'
+            else:
+                return 'stance'
     if lower == 'RHS':
         if upper == 'RHS' or upper == 'LTO':
-            return 'stance'
+            if leg == left:
+                return 'stance'
+            else:
+                return 'swing'
         else:
-            return 'swing'
+            if leg == left:
+                return 'swing'
+            else:
+                return 'stance'
+    # else:
+    #    if lower == 'LTO':
+    #        if upper == 'LTO' or upper == 'LHS':
+    #            return 'stance'
+    #        else:
+    #            return 'swing'
+    #    if lower == 'LHS':
+    #        if upper == 'LHS' or upper == 'RTO' or upper == 'RHS':
+    #            return 'stance'
+    #        else:
+    #            return 'swing'
+    #    if lower == 'RTO':
+    #        # if upper == 'RTO' or upper == 'RTS' or upper == 'LTO':
+    #        if upper == 'RTO' or upper == 'RHS':  # or upper == 'LTO'
+    #            return 'swing'
+    #        else:
+    #            return 'stance'
+    #    if lower == 'RHS':
+    #        if upper == 'RHS' or upper == 'LTO':
+    #            return 'swing'
+    #        else:
+    #            return 'stance'
 
 
 # NOT SURE IF IT MAKES SENSE to have different phase for left and right
@@ -86,13 +134,14 @@ rospy.init_node('auto_annotate')
 pref = rospy.get_param('~prefix', "none")
 auto = rospy.get_param('~auto', "False")
 rospack = rospkg.RosPack()
-path = rospack.get_path('gait_hmm_ros')+'/scripts/'
+path = rospack.get_path('gait_hmm_ros') + '/scripts/'
 pref = path + pref
 
 matfile = rospy.get_param('~matfile', "none")
 if matfile != "none":
-    matfile_data = sio.loadmat(path+matfile)
+    matfile_data = sio.loadmat(path + matfile)
 
+leg = rospy.get_param("~leg", "left")
 
 joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
                'rw', 'ls', 'lua', 'lla', 'lw']
@@ -112,8 +161,8 @@ imu_pickled_data = []
 
 bridge = CvBridge()
 
-ano = cv2.imread(path+"ano.png")
-aano = cv2.imread(path+"aano.png")
+ano = cv2.imread(path + "ano.png")
+aano = cv2.imread(path + "aano.png")
 ano = cv2.resize(ano, (640, 480))
 aano = cv2.resize(aano, (640, 480))
 total_entries = 0
@@ -123,9 +172,9 @@ total_sensors = len(imu_names)
 # Load enabled IMUS #
 #####################
 for name in joint_names:
-    fullname = pref+"_"+name+".p"
+    fullname = pref + "_" + name + ".p"
     if os.path.isfile(fullname):
-        rospy.logwarn("Loading "+fullname)
+        rospy.logwarn("Loading " + fullname)
         x = pickle.load(open(fullname, "rb"))
         print len(x)
         imu_pickled_data.append(x)
@@ -133,21 +182,20 @@ for name in joint_names:
     else:
         imu_pickled_data.append([])
 
-rospy.logwarn("Loading timestamps from "+pref+"_timestamps.p")
-imu_timestamps = pickle.load(open(pref+"_timestamps.p", "rb"))
-rospy.logwarn("Loading images from "+pref+"_images.p")
-images = pickle.load(open(pref+"_images.p", "rb"))
+rospy.logwarn("Loading timestamps from " + pref + "_timestamps.p")
+imu_timestamps = pickle.load(open(pref + "_timestamps.p", "rb"))
+rospy.logwarn("Loading images from " + pref + "_images.p")
+images = pickle.load(open(pref + "_images.p", "rb"))
 rl_timestamps = []
 #############################################
 # Transform ROS timestamps to duration from #
 # start of recording                        #
 #############################################
 for i in imu_timestamps:
-    rl_timestamps.append(abs(i - imu_timestamps[0])/1000000000)
+    rl_timestamps.append(abs(i - imu_timestamps[0]) / 1000000000)
 
 # start_frame = min(matfile_data['LHS'][0], matfile_data['LHS'], matfile_data['LHS'], matfile_data['LHS'][0])
 mocap_data = []
-
 
 mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
 mocap_indexes = [0, 0, 0, 0]
@@ -158,7 +206,7 @@ phase_labels_b = ['lswing', 'lstance', 'rswing', 'rstance']
 if auto == "True":
     mocap_lists = [lhs, lto, rhs, rto]
 
-    mocap_size = len(lhs)+len(lto)+len(rhs)+len(rto)
+    mocap_size = len(lhs) + len(lto) + len(rhs) + len(rto)
 
     first_row = (lhs[0], lto[0], rhs[0], rto[0])
     rospy.loginfo("First Row : " + str(first_row))
@@ -179,7 +227,7 @@ if auto == "True":
         # rospy.loginfo(mocap_data[i])
         i += 1
     start_mocap = mocap_data[0][1]
-    end_mocap = mocap_data[mocap_size-1][1]
+    end_mocap = mocap_data[mocap_size - 1][1]
 
 else:
     #######################################
@@ -252,8 +300,8 @@ else:
             # save
             for i in range(0, total_sensors):
                 if len(imu_pickled_data[i]) != 0:
-                    rospy.logwarn("Dumping "+joint_names[i]+" to " + pref+"_"+joint_names[i] + ".p")
-                    pickle.dump(imu_pickled_data[i], open(pref+"_"+joint_names[i] + ".p", "wb"))
+                    rospy.logwarn("Dumping " + joint_names[i] + " to " + pref + "_" + joint_names[i] + ".p")
+                    pickle.dump(imu_pickled_data[i], open(pref + "_" + joint_names[i] + ".p", "wb"))
 
 i = 0
 lower_index = 0
@@ -269,34 +317,34 @@ while i < total_entries:
     # rospy.loginfo("#"+str(i)+": Lower Index :"+str(lower_index)+", Upper Index :"+str(upper_index))
     if rl_timestamps[i] < mocap_data[0][1]:
         lower_bound = mocap_data[0][0]
-        rospy.logwarn(str(rl_timestamps[i])+" is smaller than " +
+        rospy.logwarn(str(rl_timestamps[i]) + " is smaller than " +
                       str(mocap_data[0][0]) +
                       str(mocap_data[0][1])[0:10] + "]")
-    elif rl_timestamps[i] > mocap_data[len(mocap_data)-1][1]:
-        rospy.logwarn(str(rl_timestamps[i])+" is greater than " +
-                      str(mocap_data[len(mocap_data)-1][0]) +
-                      str(mocap_data[len(mocap_data)-1][1])[0:10] + "]")
+    elif rl_timestamps[i] > mocap_data[len(mocap_data) - 1][1]:
+        rospy.logwarn(str(rl_timestamps[i]) + " is greater than " +
+                      str(mocap_data[len(mocap_data) - 1][0]) +
+                      str(mocap_data[len(mocap_data) - 1][1])[0:10] + "]")
     else:
-        while rl_timestamps[i] > mocap_data[lower_index][1] and lower_index < len(mocap_data)-1:
+        while rl_timestamps[i] > mocap_data[lower_index][1] and lower_index < len(mocap_data) - 1:
             lower_index += 1
         lower_index -= 1
-        upper_index = lower_index+1
-        while rl_timestamps[i] > mocap_data[upper_index][1] and upper_index < len(mocap_data)-1:
+        upper_index = lower_index + 1
+        while rl_timestamps[i] > mocap_data[upper_index][1] and upper_index < len(mocap_data) - 1:
             upper_index += 1
-        rospy.logwarn(str(rl_timestamps[i])+" is between " + str(lower_index)+" : " +
+        rospy.logwarn(str(rl_timestamps[i]) + " is between " + str(lower_index) + " : " +
                       str(mocap_data[lower_index][0]) +
                       str(mocap_data[lower_index][1])[0:10] + "] and " +
-                      str(upper_index)+" : " +
+                      str(upper_index) + " : " +
                       str(mocap_data[upper_index][0]) +
                       str(mocap_data[upper_index][1])[0:10] + "]")
 
     for j in range(0, total_sensors):
-            if len(imu_pickled_data[j]) != 0:
-                imu_pickled_data[j][i] = imu_pickled_data[j][i]._replace(label=phase_labels_a.index(
-                    assign_label_a(str(mocap_data[lower_index][0]), str(mocap_data[upper_index][0]))))
+        if len(imu_pickled_data[j]) != 0:
+            imu_pickled_data[j][i] = imu_pickled_data[j][i]._replace(label=phase_labels_a.index(
+                assign_label_a(str(mocap_data[lower_index][0]), str(mocap_data[upper_index][0]), leg)))
     i += 1
 
 for i in range(0, total_sensors):
     if len(imu_pickled_data[i]) != 0:
-        rospy.logwarn("Dumping "+joint_names[i]+" to " + pref+"_"+joint_names[i] + "_annotated.p")
-        pickle.dump(imu_pickled_data[i], open(pref+"_"+joint_names[i] + "_annotated.p", "wb"))
+        rospy.logwarn("Dumping " + joint_names[i] + " to " + pref + "_" + joint_names[i] + "_annotated.p")
+        pickle.dump(imu_pickled_data[i], open(pref + "_" + joint_names[i] + "_annotated.p", "wb"))
