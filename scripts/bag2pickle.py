@@ -42,17 +42,23 @@ matfile = rospy.get_param('~matfile', "none")
 if matfile != "none":
     matfile_data = sio.loadmat(matfile)
 
-joint_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
-             'rw', 'ls', 'lua', 'lla', 'lw']
+joint_names = ['rf', 'rll', 'rul',
+               'lf', 'lll', 'lul',
+               'm', 'ch', 'h',
+               'rs', 'rua', 'rla', 'rw',
+               'ls', 'lua', 'lla', 'lw']
 
-joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg'
+joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
                     'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
-                    'Mid', 'Chest',
+                    'Mid', 'Chest', 'Head',
                     'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
                     'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
-imu_names = ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',
-             '~rw', '~ls', '~lua', '~lla', '~lw']
+imu_names = ['~rf', '~rll', '~rul',
+             '~lf', '~lll', '~lul',
+             '~m', '~ch', '~h',
+             '~rs', '~rua', '~rla', '~rw',
+             '~ls', '~lua', '~lla', '~lw']
 
 imu_vectors = [[] for i in range(0, len(imu_names))]
 imu_pickle_data = [[] for i in range(0, len(imu_names))]
@@ -60,6 +66,7 @@ imu_timestamps = [[] for i in range(0, len(imu_names))]
 imu_indices = [[] for i in range(0, len(imu_names))]
 imu_enable = [0 for i in range(0, len(imu_names))]
 imu_topics = ["" for i in range(0, len(imu_names))]
+
 images = []
 image_timestamps = []
 image_indices = []
@@ -68,6 +75,10 @@ timestamps = []
 pickle_timestamps = []
 
 for i in range(0, len(imu_names)):
+    rospy.logwarn(i)
+    # rospy.logwarn(len(joint_names_full))
+    # rospy.logwarn(len(imu_topics))
+    # rospy.logwarn(len(imu_names))
     imu_topics[i] = rospy.get_param(imu_names[i], imu_enable[i])
     rospy.logwarn(joint_names_full[i]+" topic : "+imu_topics[i])
 
@@ -161,4 +172,5 @@ pickle.dump(pickle_timestamps, open(pref + "_timestamps.p", "wb"))
 rospy.logwarn("dumping images to " + pref + "_images.p")
 pickle.dump(images_pickle_data, open(pref + "_images.p", "wb"))
 rospy.logerr(str(len(images_pickle_data))+" frames")
+rospy.logwarn(str(min_)+" total frames")
 

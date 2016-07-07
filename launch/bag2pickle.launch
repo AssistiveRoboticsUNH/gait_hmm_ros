@@ -8,10 +8,11 @@
 		<param name = "rll" type = "string" value = "" />
 		<param name = "rul" type = "string" value = "" />
 		<param name = "lf" type = "string" value = "l_upper_arm_data_vec" />
-		<param name = "lll" type = "string" value = "l_hand_data_vec" />
-		<param name = "lul" type = "string" value = "r_hand_data_vec" />
-		<param name = "m" type = "string" value = "l_lower_arm_data_vec" />
-		<param name = "ch" type = "string" value = "r_lower_arm_data_vec" />
+		<param name = "lll" type = "string" value = "r_upper_arm_data_vec" />
+		<param name = "lul" type = "string" value = "l_wrist_data_vec" />
+		<param name = "m" type = "string" value = "r_shoulder_data_vec" />
+		<param name = "ch" type = "string" value = "" />
+		<param name = "h" type = "string" value = "" />
 		<param name = "ls" type = "string" value = "" />
 		<param name = "rs" type = "string" value = "" />
 		<param name = "rua" type = "string" value = "" />

@@ -1,7 +1,7 @@
 <launch>
     <arg name = "dur" default="2"/>
     <arg name = "prefix" default = "imu_recording"/>
-    <node name = "imu_record" pkg = "rosbag" type="rosbag"
+    <node name = "imu_record" pkg = "rosbag" type="record" required="true" output ="screen"
           args = "-O $(arg prefix) -q --duration=$(arg dur)m
           /usb_cam/image_raw
           /l_foot_data_vec
@@ -20,6 +20,7 @@
           /r_upper_arm_data_vec
           /r_lower_arm_data_vec
           /r_wrist_data_vec
+          /head_data_vec
           "
     />
 </launch>
