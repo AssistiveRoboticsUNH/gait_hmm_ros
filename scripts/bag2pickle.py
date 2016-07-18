@@ -45,20 +45,20 @@ if matfile != "none":
 joint_names = ['rf', 'rll', 'rul',
                'lf', 'lll', 'lul',
                'm', 'ch', 'h',
-               'rs', 'rua', 'rla', 'rw',
-               'ls', 'lua', 'lla', 'lw']
+               'rs', 'rua', 'rla', 'rh',
+               'ls', 'lua', 'lla', 'lh']
 
 joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
                     'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
                     'Mid', 'Chest', 'Head',
-                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
-                    'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
+                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Hand',
+                    'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Hand']
 
 imu_names = ['~rf', '~rll', '~rul',
              '~lf', '~lll', '~lul',
              '~m', '~ch', '~h',
-             '~rs', '~rua', '~rla', '~rw',
-             '~ls', '~lua', '~lla', '~lw']
+             '~rs', '~rua', '~rla', '~rh',
+             '~ls', '~lua', '~lla', '~lh']
 
 imu_vectors = [[] for i in range(0, len(imu_names))]
 imu_pickle_data = [[] for i in range(0, len(imu_names))]
@@ -100,6 +100,7 @@ min_ = sys.maxint
 min_index = 0
 
 for i in range(0, len(imu_vectors)):
+    rospy.logwarn(str(len(imu_vectors[i]))+" Frames in "+imu_names[i])
     if len(imu_vectors[i]) != 0:
         if len(imu_vectors[i]) < min_:
             min_ = len(imu_vectors[i])
@@ -145,11 +146,11 @@ for i in range(0, min_):
             # print p_data_
             imu_pickle_data[j].append(p_data_)
 
-    try:
-        cvim = bridge.imgmsg_to_cv2(images[image_indices[i]], "bgr8")
-        images_pickle_data.append(cvim)
-    except CvBridgeError as e:
-        print(e)
+    # try:
+    #    cvim = bridge.imgmsg_to_cv2(images[image_indices[i]], "bgr8")
+    #    images_pickle_data.append(cvim)
+    # except CvBridgeError as e:
+    #    print(e)
 # for j in range(0, len(imu_vectors)):
 #     print len(imu_vectors[j])
 # print len(image_indices)
@@ -170,7 +171,9 @@ for j in range(0, len(imu_vectors)):
 rospy.logwarn("dumping timestamps to " + pref + "_timestamps.p")
 pickle.dump(pickle_timestamps, open(pref + "_timestamps.p", "wb"))
 rospy.logwarn("dumping images to " + pref + "_images.p")
-pickle.dump(images_pickle_data, open(pref + "_images.p", "wb"))
-rospy.logerr(str(len(images_pickle_data))+" frames")
+# pickle.dump(images_pickle_data, open(pref + "_images.p", "wb"))
+pickle.dump(images, open(pref + "_images.p", "wb"))
+# rospy.logerr(str(len(images_pickle_data))+" frames")
+rospy.logerr(str(len(images))+" frames")
 rospy.logwarn(str(min_)+" total frames")
 

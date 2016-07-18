@@ -40,6 +40,7 @@ images = pickle.load(open(pref + "_images.p", "r"))
 lower_leg = pickle.load(open(pref + "_lower_leg.p", "rb"))
 upper_leg = pickle.load(open(pref + "_upper_leg.p", "rb"))
 foot = pickle.load(open(pref + "_foot.p", "rb"))
+p_indices = pickle.load(open(pref + "_indices.p", "r"))
 
 ano = cv2.imread("ano.png")
 ano = cv2.resize(ano, (640, 480))
@@ -104,7 +105,7 @@ if sys.argv[2] == 'v':
         plt.savefig('foo.png')
         foo = cv2.imread("foo.png")
         foo = cv2.resize(foo, (640, 480))
-        vis = np.concatenate((images[i], foo), axis=1)
+        vis = np.concatenate((images[p_indices[i]], foo), axis=1)
 
         cv2.imshow("Annotation Window", vis)
         k = cv2.waitKey(0)
@@ -124,7 +125,9 @@ if sys.argv[2] == 'v':
 while i < total_entries:
     print("Frame #" + str(i) + "/" + str(total_entries))
     # print images[i].shape
-    vis = np.concatenate((images[i], ano), axis=1)
+    # vis = np.concatenate((images[i], ano), axis=1)
+    vis = np.concatenate((images[p_indices[i]], ano), axis=1)
+
     # cv2.imshow("Annotation Window", images[i])
     cv2.imshow("Annotation Window", vis)
     k = cv2.waitKey(0)

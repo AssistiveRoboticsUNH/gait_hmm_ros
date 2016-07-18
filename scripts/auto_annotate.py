@@ -191,6 +191,8 @@ rospy.logwarn("Loading timestamps from " + pref + "_timestamps.p")
 imu_timestamps = pickle.load(open(pref + "_timestamps.p", "rb"))
 rospy.logwarn("Loading images from " + pref + "_images.p")
 images = pickle.load(open(pref + "_images.p", "rb"))
+rospy.logwarn("Loading indices from " + pref + "_indices.p")
+indices = pickle.load(open(pref+ "_indices.p", "rb"))
 rl_timestamps = []
 #############################################
 # Transform ROS timestamps to duration from #
@@ -246,7 +248,8 @@ else:
     data_index = 0
     while i < total_entries:
         print("Frame #" + str(i) + "/" + str(total_entries))
-        vis = np.concatenate((images[i], aano), axis=1)
+        # vis = np.concatenate((images[i], aano), axis=1)
+        vis = np.concatenate((images[indices[i]], aano), axis=1)
         cv2.imshow("Annotation Window", vis)
         k = cv2.waitKey(0)
         k &= 255
