@@ -15,11 +15,11 @@
           /l_shoulder_data_vec
           /l_upper_arm_data_vec
           /l_lower_arm_data_vec
-          /l_wrist_data_vec
+          /l_hand_data_vec
           /r_shoulder_data_vec
           /r_upper_arm_data_vec
           /r_lower_arm_data_vec
-          /r_wrist_data_vec
+          /r_hand_data_vec
           /head_data_vec
           "
     />
