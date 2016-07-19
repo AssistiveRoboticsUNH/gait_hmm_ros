@@ -10,6 +10,7 @@ import pickle
 import sys
 import numpy as np
 import entry_data as ed
+from std_msgs.msg import Int32
 from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import normalize
@@ -106,10 +107,10 @@ if prefix == 'None':
     rospy.logerr("No filename given ,exiting")
     exit()
 
-
 rospy.Subscriber(rospy.get_param('~foot_topic', 'l_upper_arm_data_vec'), dataVec, foot_cb)
 rospy.Subscriber(rospy.get_param('~l_leg_topic', 'l_hand_data_vec'), dataVec, lower_leg_cb)
 rospy.Subscriber(rospy.get_param('~u_leg_topic', 'r_hand_data_vec'), dataVec, upper_leg_cb)
+phase_pub = rospy.Publisher('/phase', std_msgs.msg.Int32, queue_size=10)
 use_imu[0] = rospy.get_param('~use_foot', 1)
 use_imu[1] = rospy.get_param('~use_lower_leg', 0)
 use_imu[2] = rospy.get_param('~use_upper_leg', 0)
@@ -245,7 +246,7 @@ logp, path = model.viterbi(list(ff[limit:]))
 print len(path)
 sum_ = 0.0
 for i in range(0, len(path)):
-    if path[i][1].name != 'Gait-start' :
+    if path[i][1].name != 'Gait-start':
         # print path[i][1].name + " " + state_names[labels[i+limit - 1]]
         if path[i][1].name == state_names[labels[i+limit - 1]]:
             sum_ += 1.0
@@ -262,8 +263,21 @@ while not rospy.is_shutdown():
     if counter == 10:
         rospy.logerr("New entry")
         counter = 0
+        sw_cnt = 0
+        st_cnt = 0
         print stream[0]
-        print create_training_data(stream, use_imu, use_measurements)
+        online_batch = create_training_data(stream, use_imu, use_measurements)
+        logp, path = model.viterbi(list(ff[limit:]))
+        for i in range(0, len(path)):
+            if path[i][1].name != 'Gait-start':
+                if path[i][1].name == 'swing':
+                    sw_cnt += 1
+                else:
+                    st_cnt += 1
+        if sw_cnt > st_cnt:
+            phase_pub.publish(1)
+        else:
+            phase_pub.publish(0)
         stream = []
     # rospy.spin()
 exit()
