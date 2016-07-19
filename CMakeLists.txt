@@ -53,6 +53,12 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message1.msg
 #   Message2.msg
 # )
+add_message_files(
+    FILES
+    ardu_msg.msg
+#   Message1.msg
+#   Message2.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -73,6 +79,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   sensor_msgs#   std_msgs
 # )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+#   sensor_msgs#   std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,6 +115,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+    CATKIN_DEPENDS message_runtime
 #  INCLUDE_DIRS include
 #  LIBRARIES gait_hmm_ros
 #  CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs tf tf2
