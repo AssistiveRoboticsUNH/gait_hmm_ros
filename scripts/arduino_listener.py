@@ -16,7 +16,7 @@ data = ardu_msg()
 def make_msg(frame):
     # data = frame
     fr_data = (frame['rf_data'][1:-1]).split(",")
-    print fr_data[0]
+    #print fr_data[0]
     data.sequ = int(fr_data[0])
     data.ir = float(fr_data[1])
     data.prox = float(fr_data[2])
@@ -35,30 +35,33 @@ ser = serial.Serial(PORT, BAUD_RATE)
 rospy.init_node('arduino_listener')
 
 # for requested input
-#dev = XBee(ser, escaped=True)
-dev = ZigBee(ser, escaped=True)
+# dev = XBee(ser, escaped=True)
+# dev = ZigBee(ser, escaped=True)
 
 # for asynchronous use
 # dev = XBee(ser, callback=make_msg)
-# dev = ZigBee(ser, callback=make_msg)
+dev = ZigBee(ser, callback=make_msg)
 
-arduPub = rospy.Publisher('arduino', ardu_msg, queue_size=50)
+arduPub = rospy.Publisher('arduino', ardu_msg, queue_size=5)
 r = rospy.Rate(50)
 message_received = 0
 
-# while not rospy.is_shutdown():
+while not rospy.is_shutdown():
+	data.header.stamp = rospy.Time.now()
+	arduPub.publish(data)
+
 #         if message_received == 1:
 #             arduPub.publish(data)
 #             r.sleep()
 
-while not rospy.is_shutdown():
+#while not rospy.is_shutdown():
 #while True:
-    try:
-        make_msg(dev.wait_read_frame())
-        data.header.stamp = rospy.Time.now()
-        arduPub.publish(data)
-    except KeyboardInterrupt:
-        break
+#    try:
+#        make_msg(dev.wait_read_frame())
+#        data.header.stamp = rospy.Time.now()
+#        arduPub.publish(data)
+#    except :
+#        rospy.logerr("timeout")
 
 dev.halt()
 ser.close()
