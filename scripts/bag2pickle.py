@@ -73,6 +73,11 @@ image_indices = []
 images_pickle_data = []
 timestamps = []
 pickle_timestamps = []
+arduino_messages = []
+arduino_timestamps = []
+arduino_indices = []
+arduino_pickle_data = []
+
 
 for i in range(0, len(imu_names)):
     rospy.logwarn(i)
@@ -89,6 +94,9 @@ for topic, msg, t in bag.read_messages():
         # rospy.logerr("/usb_cam/image_raw")
         images.append(msg)
         image_timestamps.append(t.to_nsec())
+    elif topic == "/arduino":
+        arduino_messages.append(msg)
+        arduino_timestamps.append(t.to_nsec())
     else:
         index = imu_topics.index(topic[1:])
         # rospy.logerr(topic+" --> "+imu_names[index])
@@ -119,12 +127,15 @@ for i in range(0, min_):
             # print t
             imu_indices[j].append(t)
             time += imu_timestamps[j][t]
+
             n += 1.0
         else:
             imu_indices[j].append(-1)
     # image_indexes.append(images.index(images[(min(image_timestamps, key=lambda x: abs(x-ts)))]))
     pickle_timestamps.append(time/n)
     image_indices.append(image_timestamps.index((min(image_timestamps, key=lambda x: abs(x-ts)))))
+    arduino_indices.append(arduino_timestamps.index((min(arduino_timestamps, key=lambda x: abs(x-ts)))))
+
     # rospy.logerr(str(i)+"/"+str(len(imu_vectors[min_index]))+":"+str(ts)+" --> "+str(t))
 
 # for j in range(0, len(imu_vectors)):
@@ -170,10 +181,15 @@ for j in range(0, len(imu_vectors)):
 # print len(pickle_timestamps)
 rospy.logwarn("dumping timestamps to " + pref + "_timestamps.p")
 pickle.dump(pickle_timestamps, open(pref + "_timestamps.p", "wb"))
+
 rospy.logwarn("dumping images to " + pref + "_images.p")
-# pickle.dump(images_pickle_data, open(pref + "_images.p", "wb"))
 pickle.dump(images, open(pref + "_images.p", "wb"))
+
+rospy.logwarn("dumping arduino readings to " + pref + "_arduino.p")
+pickle.dump(arduino_messages, open(pref + "_arduino.p", "wb"))
+
 # rospy.logerr(str(len(images_pickle_data))+" frames")
-rospy.logerr(str(len(images))+" frames")
+rospy.logerr(str(len(images))+" images")
+rospy.logerr(str(len(arduino_messages))+" arduino readings")
 rospy.logwarn(str(min_)+" total frames")
 
