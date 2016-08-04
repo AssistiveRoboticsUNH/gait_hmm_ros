@@ -80,7 +80,7 @@ arduino_pickle_data = []
 
 
 for i in range(0, len(imu_names)):
-    rospy.logwarn(i)
+    # rospy.logwarn(i)
     # rospy.logwarn(len(joint_names_full))
     # rospy.logwarn(len(imu_topics))
     # rospy.logwarn(len(imu_names))
@@ -88,7 +88,7 @@ for i in range(0, len(imu_names)):
     rospy.logwarn(joint_names_full[i]+" topic : "+imu_topics[i])
 
 for topic, msg, t in bag.read_messages():
-    # rospy.logerr(t)
+    rospy.logerr(topic)
     if topic == "/usb_cam/image_raw":
         # rospy.logerr(msg.header.stamp)
         # rospy.logerr("/usb_cam/image_raw")
@@ -192,4 +192,4 @@ pickle.dump(arduino_messages, open(pref + "_arduino.p", "wb"))
 rospy.logerr(str(len(images))+" images")
 rospy.logerr(str(len(arduino_messages))+" arduino readings")
 rospy.logwarn(str(min_)+" total frames")
-
+rospy.shutdown()

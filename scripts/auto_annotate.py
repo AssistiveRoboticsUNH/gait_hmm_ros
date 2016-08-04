@@ -34,46 +34,46 @@ def assign_label_a(lower, upper, leg):
     # if leg == left:
     if lower == 'LTO':
         if upper == 'LTO' or upper == 'LHS':
-            if leg == left:
+            if leg == "left":
                 return 'swing'
             else:
                 return 'stance'
         else:
-            if leg == left:
+            if leg == "left":
                 return 'stance'
             else:
                 return 'swing'
     if lower == 'LHS':
         if upper == 'LHS' or upper == 'RTO' or upper == 'RHS':
-            if leg == left:
+            if leg == "left":
                 return 'stance'
             else:
                 return 'swing'
         else:
-            if leg == left:
+            if leg == "left":
                 return 'swing'
             else:
                 return 'stance'
     if lower == 'RTO':
         # if upper == 'RTO' or upper == 'RTS' or upper == 'LTO':
         if upper == 'RTO' or upper == 'RHS':  # or upper == 'LTO'
-            if leg == left:
+            if leg == "left":
                 return 'stance'
             else:
                 return 'swing'
         else:
-            if leg == left:
+            if leg == "left":
                 return 'swing'
             else:
                 return 'stance'
     if lower == 'RHS':
         if upper == 'RHS' or upper == 'LTO':
-            if leg == left:
+            if leg == "left":
                 return 'stance'
             else:
                 return 'swing'
         else:
-            if leg == left:
+            if leg == "left":
                 return 'swing'
             else:
                 return 'stance'
@@ -192,7 +192,7 @@ imu_timestamps = pickle.load(open(pref + "_timestamps.p", "rb"))
 rospy.logwarn("Loading images from " + pref + "_images.p")
 images = pickle.load(open(pref + "_images.p", "rb"))
 rospy.logwarn("Loading indices from " + pref + "_indices.p")
-indices = pickle.load(open(pref+ "_indices.p", "rb"))
+indices = pickle.load(open(pref + "_indices.p", "rb"))
 rl_timestamps = []
 #############################################
 # Transform ROS timestamps to duration from #
@@ -203,7 +203,7 @@ for i in imu_timestamps:
 
 # start_frame = min(matfile_data['LHS'][0], matfile_data['LHS'], matfile_data['LHS'], matfile_data['LHS'][0])
 mocap_data = []
-
+class_pickle = []
 mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
 mocap_indexes = [0, 0, 0, 0]
 phase_labels_a = ['swing', 'stance']
@@ -211,6 +211,11 @@ phase_indices_a = [0, 1]
 phase_labels_b = ['lswing', 'lstance', 'rswing', 'rstance']
 
 if auto == "True":
+
+    lhs = matfile_data['LHS'][0][0]
+    lto = matfile_data['LTO'][0][0]
+    rhs = matfile_data['RHS'][0][0]
+    rto = matfile_data['RTO'][0][0]
     mocap_lists = [lhs, lto, rhs, rto]
 
     mocap_size = len(lhs) + len(lto) + len(rhs) + len(rto)
@@ -350,9 +355,13 @@ while i < total_entries:
         if len(imu_pickled_data[j]) != 0:
             imu_pickled_data[j][i] = imu_pickled_data[j][i]._replace(label=phase_labels_a.index(
                 assign_label_a(str(mocap_data[lower_index][0]), str(mocap_data[upper_index][0]), leg)))
+            class_pickle.append(imu_pickled_data[j][i].label)
     i += 1
 
 for i in range(0, total_sensors):
     if len(imu_pickled_data[i]) != 0:
         rospy.logwarn("Dumping " + joint_names[i] + " to " + pref + "_" + joint_names[i] + "_annotated.p")
         pickle.dump(imu_pickled_data[i], open(pref + "_" + joint_names[i] + "_annotated.p", "wb"))
+
+rospy.logwarn("Dumping labels to " + pref + "_labels_annotated.p")
+pickle.dump(class_pickle, open(pref + "_labels_annotated.p", "wb"))

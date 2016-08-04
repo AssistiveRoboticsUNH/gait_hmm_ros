@@ -1,0 +1,9 @@
+<launch>
+<arg name = "prefix" default = "none" />
+<arg name = "matfile" default = "none" />
+<node name = "align_mocap" pkg="gait_hmm_ros" type = "align_mocap.py" output = "screen" required = "true" >
+	<param name = "prefix" value = "$(arg prefix)" />
+    <param name = "matfile" type = "string" value = "$(arg matfile)" />
+    <param name = "leg" type = "string" value = "$(arg leg)" />
+    </node>
+</launch>
