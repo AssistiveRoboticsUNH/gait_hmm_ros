@@ -1,4 +1,5 @@
-function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_accel, use_com, use_ir, use_prox, use_fsr, name, gran)
+function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_accel, ...
+use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     sensor_data_tr = [];
     sensor_data_te = [];
     rf_tr = [];
@@ -11,7 +12,8 @@ function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_
     m_te = [];
     arduino_tr = [];
     arduino_te = [];
-    arg_list = [use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_accel, use_com, use_ir, use_prox, use_fsr, gran]
+    arg_list = [use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_accel, ...
+    use_com, use_ir, use_prox, use_fsr, gran, k, mocap]
     name = [name '.mat']
     assignin('base', 'arg_list', arg_list);
     if use_rf == 1
@@ -307,17 +309,31 @@ function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_
         
     sensor_data_tr = horzcat(sensor_data_tr, arduino_tr);
     sensor_data_te = horzcat(sensor_data_te, arduino_te);
-        
-    a = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas1_labels_annotated.mat');
-    a = a.labels;
-    b = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas2_labels_annotated.mat');
-    b = b.labels;
-    c = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas3_labels_annotated.mat');
-    c = c.labels;
-    e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas4_labels_annotated.mat');
-    e = e.labels;
-    %e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas5_labels_annotated.mat');
-    %e = e.labels;
+    
+    if mocap == 1
+        a = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas1_labels_mocap_annotated.mat');
+        a = a.labels;
+        b = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas2_labels_mocap_annotated.mat');
+        b = b.labels;
+        c = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas3_labels_mocap_annotated.mat');
+        c = c.labels;
+        e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas4_labels_mocap_annotated.mat');
+        e = e.labels;
+        %e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas5_labels_mocap_annotated.mat');
+        %e = e.labels;
+    else
+        a = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas1_labels_annotated.mat');
+        a = a.labels;
+        b = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas2_labels_annotated.mat');
+        b = b.labels;
+        c = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas3_labels_annotated.mat');
+        c = c.labels;
+        e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas4_labels_annotated.mat');
+        e = e.labels;
+        %e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas5_labels_annotated.mat');
+        %e = e.labels;
+    end    
+    
     labels_tr = horzcat(a, b, c);
     %labels_te = horzcat(d, e);
     labels_te = e;
@@ -385,15 +401,27 @@ function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_
     xBounds(2,length(full_data(1,:))+1)=1;
 
     dispOpt = ones(1,4);
-
-
-    CVO = cvpartition(full_class, 'k', 10);
+    trnOpt = NaN
+    
+    if k == 0
+        k = 10 
+    end
+    
+    CVO = cvpartition(full_class, 'k', k);
     assignin('base', 'CVO', CVO);
     err = zeros(CVO.NumTestSets, 1);
     trIdx = CVO.training(1);
     assignin('base', 'trIdx', trIdx);
     teIdx = CVO.test(1);
     assignin('base', 'teIdx', teIdx);
+    size(trIdx==1);
+    size(teIdx==1);
+    
+    chkIn = full_data(CVO.training(2),:);
+    chkCl = full_class(CVO.test(2),:);
+    
+    assignin('base', 'chkIn', chkIn);
+    assignin('base', 'chkCl', chkCl);
 
     tr_in = full_data(trIdx,:);
     tr_cl = full_class(trIdx,:);
@@ -401,28 +429,40 @@ function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_
     assignin('base', 'tr_in', tr_in);
     assignin('base', 'tr_cl', tr_cl);
     
-    y_in = full_data(teIdx,:);
-    y_cl = full_class(teIdx,:);
+    te_in = full_data(teIdx,:);
+    te_cl = full_class(teIdx,:);
     
-    assignin('base', 'y_in', y_in);
-    assignin('base', 'y_cl', y_cl);
+    assignin('base', 'te_in', te_in);
+    assignin('base', 'te_cl', te_cl);
     
     tr_full = [tr_in tr_cl];
-    te_full = [y_in y_cl];
+    te_full = [te_in te_cl];
     
     
     disp('FIS2 GEN')
     gf2 = genfis2(tr_in, tr_cl, radii, xBounds);
+
     
     disp('Anfis start ')
     
-    an1 = anfis([full_data full_class], gf2);
+    % an1 = anfis([full_data full_class], gf2);
+    
+    an1 = anfis([tr_in tr_cl], gf2);
+    % [an1,error,stepsize,chkFis,chkErr] = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt, [chkIn chkCl])
+    
+    res = [an1,error,stepsize,chkFis,chkErr]
+    assignin('base', 'res', res);
+    
+    assignin('base', 'error', error);
+    assignin('base', 'chkFis', chkFis);
+    assignin('base', 'chkErr', chkErr);
     
     assignin('base', 'sensor_data_tr', sensor_data_tr);
     assignin('base', 'sensor_data_te', sensor_data_te);
     assignin('base', 'an1', an1);
     
-    output = evalfis(y_in, an1);
+    disp('evalfis start ')
+    output = evalfis(te_in, an1);
     assignin('base', 'output', output);
     
     
@@ -435,7 +475,7 @@ function anfisfunction(use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_
     
     save(name, 'arg_list', 'arduino_te',  'arduino_tr', 'CVO', 'full_class', 'full_data', 'full_labels', ...
     'labels_tr', 'labels_te', 'm_tr', 'm_te', 'rf_tr', 'rf_te',  'rll_tr', 'rll_te', 'rul_tr', 'rul_te', ...
-    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'y_in', 'y_cl')
+    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl', 'res')
     
 end
 
