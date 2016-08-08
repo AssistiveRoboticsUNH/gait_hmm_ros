@@ -14,6 +14,8 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     arduino_te = [];
     arg_list = [use_rf, use_rll, use_rul, use_m, use_quat, use_gyro, use_accel, ...
     use_com, use_ir, use_prox, use_fsr, gran, k, mocap]
+    name = [name '.mat']
+    assignin('base', 'arg_list', arg_list);
     if use_rf == 1
         a = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas1_rf.mat');
         a = a.rf;
@@ -391,6 +393,7 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     
     radii = ones(1,d(2)+1)*0.2;
     radii(1, end) = 1;
+    assignin('base', 'radii', radii);
 
     xBounds = zeros(2, length(full_data(1,:))+1);
     for n = 1:length(full_data(1,:))
@@ -399,7 +402,8 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     end
     xBounds(1,length(full_data(1,:))+1)=0;
     xBounds(2,length(full_data(1,:))+1)=1;
-
+    assignin('base', 'xBounds', xBounds);
+    
     dispOpt = ones(1,4);
     trnOpt = NaN
     
@@ -440,24 +444,25 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     
     disp('FIS2 GEN')
     gf2 = genfis2(tr_in, tr_cl, radii, xBounds);
+    assignin('base', 'gf2', gf2);
 
     
     disp('Anfis start ')
     
     % an1 = anfis([full_data full_class], gf2);
     
-    an1 = anfis([tr_in tr_cl], gf2);
+    an1 = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt);
     size(chkIn)
     size(tr_in)
     
     %[an1,error,stepsize,chkFis,chkErr] = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt, [chkIn chkCl])
     
-    res = [an1,error,stepsize,chkFis,chkErr]
-    assignin('base', 'res', res);
+    %res = [an1,error,stepsize,chkFis,chkErr]
+    %assignin('base', 'res', res);
     
-    assignin('base', 'error', error);
-    assignin('base', 'chkFis', chkFis);
-    assignin('base', 'chkErr', chkErr);
+    %assignin('base', 'error', error);
+    %assignin('base', 'chkFis', chkFis);
+    %assignin('base', 'chkErr', chkErr);
     
     assignin('base', 'sensor_data_tr', sensor_data_tr);
     assignin('base', 'sensor_data_te', sensor_data_te);
@@ -475,8 +480,8 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     
     assignin('base', 'output_norm', output_norm);
     
-    save(name, 'arg_list', 'arduino_te',  'arduino_tr', 'CVO', 'full_class', 'full_data', 'full_labels', ...
+    save(name, 'gf2', 'an1', 'output','output_norm','arg_list', 'arduino_te',  'arduino_tr', 'CVO', 'full_class', 'full_data', 'full_labels', ...
     'labels_tr', 'labels_te', 'm_tr', 'm_te', 'rf_tr', 'rf_te',  'rll_tr', 'rll_te', 'rul_tr', 'rul_te', ...
-    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl', 'res')
+    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl')
     
 end

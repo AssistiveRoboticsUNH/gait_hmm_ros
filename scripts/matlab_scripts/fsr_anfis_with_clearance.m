@@ -441,21 +441,22 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     
     disp('FIS2 GEN')
     gf2 = genfis2(tr_in, tr_cl, radii, xBounds);
+    assignin('base', 'gf2', gf2);
 
     
     disp('Anfis start ')
     
     % an1 = anfis([full_data full_class], gf2);
     
-    an1 = anfis([tr_in tr_cl], gf2);
+    an1 = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt);
     % [an1,error,stepsize,chkFis,chkErr] = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt, [chkIn chkCl])
     
-    res = [an1,error,stepsize,chkFis,chkErr]
-    assignin('base', 'res', res);
+    %res = [an1,error,stepsize,chkFis,chkErr]
+    %assignin('base', 'res', res);
     
-    assignin('base', 'error', error);
-    assignin('base', 'chkFis', chkFis);
-    assignin('base', 'chkErr', chkErr);
+    %assignin('base', 'error', error);
+    %assignin('base', 'chkFis', chkFis);
+    %assignin('base', 'chkErr', chkErr);
     
     assignin('base', 'sensor_data_tr', sensor_data_tr);
     assignin('base', 'sensor_data_te', sensor_data_te);
@@ -473,9 +474,9 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     
     assignin('base', 'output_norm', output_norm);
     
-    save(name, 'arg_list', 'arduino_te',  'arduino_tr', 'CVO', 'full_class', 'full_data', 'full_labels', ...
+    save(name, 'gf2', 'an1', 'output','output_norm','arg_list', 'arduino_te',  'arduino_tr', 'CVO', 'full_class', 'full_data', 'full_labels', ...
     'labels_tr', 'labels_te', 'm_tr', 'm_te', 'rf_tr', 'rf_te',  'rll_tr', 'rll_te', 'rul_tr', 'rul_te', ...
-    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl', 'res')
+    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl')
     
 end
 
