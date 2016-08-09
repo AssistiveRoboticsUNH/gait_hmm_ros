@@ -23,52 +23,32 @@ from datetime import datetime
 
 
 def assign_label_a(lower, upper, leg):
+    # rospy.logerr(lower + " " + upper)
     # if leg == left:
     if lower == 'LTO':
-        if upper == 'LTO' or upper == 'LHS':
-            if leg == "left":
-                return 'swing'
-            else:
-                return 'stance'
-        else:
-            if leg == "left":
+        if upper =='LTO' or upper == 'LHS':
+            if leg == 'right':
                 return 'stance'
             else:
                 return 'swing'
-    if lower == 'LHS':
-        if upper == 'LHS' or upper == 'RTO' or upper == 'RHS':
-            if leg == "left":
+    elif lower == 'LHS':
+        if upper =='LHS' or upper == 'RTO':
+            if leg == 'right':
                 return 'stance'
             else:
                 return 'swing'
-        else:
-            if leg == "left":
+    elif lower == 'RTO':
+        if upper =='RTO' or upper == 'RHS':
+            if leg == 'right':
                 return 'swing'
             else:
                 return 'stance'
-    if lower == 'RTO':
-        # if upper == 'RTO' or upper == 'RTS' or upper == 'LTO':
-        if upper == 'RTO' or upper == 'RHS':  # or upper == 'LTO'
-            if leg == "left":
+    else:
+        if upper =='RHS' or upper == 'LTO':
+            if leg == 'right':
                 return 'stance'
             else:
                 return 'swing'
-        else:
-            if leg == "left":
-                return 'swing'
-            else:
-                return 'stance'
-    if lower == 'RHS':
-        if upper == 'RHS' or upper == 'LTO':
-            if leg == "left":
-                return 'stance'
-            else:
-                return 'swing'
-        else:
-            if leg == "left":
-                return 'swing'
-            else:
-                return 'stance'
 
 
 rospy.init_node('align_mocap')
@@ -159,37 +139,42 @@ lower_index = 0
 upper_index = 0
 
 for i in range(0, total_entries):
-    # rospy.loginfo("#"+str(i)+": Lower Index :"+str(lower_index)+", Upper Index :"+str(upper_index))
     if rl_timestamps[i] < mocap_data[0][1]:
+        # rospy.loginfo("#"+str(i)+": Lower Index : "+mocap_labels[lower_index]+
+        #               ", Upper Index :"+mocap_labels[upper_index])
         lower_bound = mocap_data[0][0]
-        rospy.logwarn(str(rl_timestamps[i]) + " is smaller than " +
-                      str(mocap_data[0][0]) +
-                      str(mocap_data[0][1])[0:10] + "]")
+        # rospy.logwarn(str(rl_timestamps[i]) + " is smaller than " +
+        #               str(mocap_data[0][0]) +
+        #               str(mocap_data[0][1])[0:10] + "]")
     elif rl_timestamps[i] > mocap_data[len(mocap_data) - 1][1]:
+        # rospy.loginfo("#"+str(i)+": Lower Index : "+mocap_labels[lower_index] +
+        #               ", Upper Index :"+mocap_labels[upper_index])
         x = 0
-        rospy.logwarn(str(rl_timestamps[i]) + " is greater than " +
-                      str(mocap_data[len(mocap_data) - 1][0]) +
-                      str(mocap_data[len(mocap_data) - 1][1])[0:10] + "]")
+        # rospy.logwarn(str(rl_timestamps[i]) + " is greater than " +
+        #               str(mocap_data[len(mocap_data) - 1][0]) +
+        #               str(mocap_data[len(mocap_data) - 1][1])[0:10] + "]")
     else:
+
         while rl_timestamps[i] > mocap_data[lower_index][1] and lower_index < len(mocap_data) - 1:
             lower_index += 1
         lower_index -= 1
         upper_index = lower_index + 1
         while rl_timestamps[i] > mocap_data[upper_index][1] and upper_index < len(mocap_data) - 1:
             upper_index += 1
-        rospy.logwarn(str(rl_timestamps[i]) + " is between " + str(lower_index) + " : " +
-                      str(mocap_data[lower_index][0]) +
-                      str(mocap_data[lower_index][1])[0:10] + "] and " +
-                      str(upper_index) + " : " +
-                      str(mocap_data[upper_index][0]) +
-                      str(mocap_data[upper_index][1])[0:10] + "]")
-    mocap_annotated.append(assign_label_a(str(mocap_data[lower_index][0]), str(mocap_data[upper_index][0]), leg))
+        # rospy.logwarn(str(rl_timestamps[i]) + " is between " + str(lower_index) + " : " +
+        #               str(mocap_data[lower_index][0]) +
+        #               str(mocap_data[lower_index][1])[0:10] + "] and " +
+        #               str(upper_index) + " : " +
+        #               str(mocap_data[upper_index][0]) +
+        #               str(mocap_data[upper_index][1])[0:10] + "]")
+    mocap_annotated.append(phase_labels_a.index(assign_label_a(str(mocap_data[lower_index][0]),
+                                                               str(mocap_data[upper_index][0]), leg)))
 
-for i in range(0, total_entries):
-    print mocap_annotated[i]
+# for i in range(0, total_entries):
+    # print mocap_annotated[i]
 
-for i in range(0, len(mocap_data)):
-    print mocap_data[i]
+# for i in range(0, len(mocap_data)):
+    # print mocap_data[i]
 
 rospy.logwarn("Dumping mocap pickle to " + path + prefix + "_mocap_pickle.p")
 pickle.dump(mocap_data, open(path + prefix + "_mocap_pickle.p", "wb"))
