@@ -226,12 +226,15 @@ model.add_states(hmm_states)
 model.add_transition(model.start, hmm_states[0], 0.5)
 model.add_transition(model.start, hmm_states[1], 0.5)
 
-for j in range(0, 2):
-    model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
-    # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
+for i in range(0, 2):
+    for j in range(0, 2):
+        model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
+        # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
 
 model.bake()
 print(model)
+for s in model.states:
+    print s.name
 skf = StratifiedKFold(full_labels, n_folds=7)
 
 for train_index, test_index in skf:
@@ -244,14 +247,23 @@ for train_index, test_index in skf:
     # print(len(test_data))
     test_class = full_labels[test_index]
     # print(len(test_class))
-    model.fit(list([train_data]), algorithm='baum-welch', verbose='True')
+    seq = []
+    for s in range(0, len(train_data)):
+        k = 0
+        seq_entry = []
+        while k < 10 and s < len(train_data):
+            seq_entry.append(train_data[s])
+            k += 1
+        seq.append(seq_entry)
+    # model.fit(list([train_data]), algorithm='baum-welch', verbose='True')
+    model.fit(seq, algorithm='baum-welch', verbose='True')
     # print(model)
     log, path = model.viterbi(test_data)
     print len(path)
     sum_ = 0.0
     for i in range(0, len(path)):
-        if path[i][1].name != 'Gait-start':
-            # print path[i][1].name + " " + state_names[labels[i+limit - 1]]
+        if path[i][1].name != 'Gait-start' and path[i][1].name != 'Gait-end':
+            # print path[i][1].name
             # print test_class[i]
             if path[i][1].name == state_names[test_class[i-1]]:
                 sum_ += 1.0
