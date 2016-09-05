@@ -23,9 +23,12 @@ use_com = rospy.get_param('~use_com', 0)
 use_fsr = rospy.get_param('~use_fsr', 0)
 use_ir = rospy.get_param('~use_ir', 0)
 use_prox = rospy.get_param('~use_prox', 0)
+folds = rospy.get_param('~folds', 10)
+batch_train = rospy.get_param('~batch_train', 1)
 rospack = rospkg.RosPack()
 path = rospack.get_path('gait_hmm_ros') + '/scripts/'
 
+stats = []
 
 names = ['andreas1', 'andreas2', 'andreas3', 'andreas4', 'andreas5']
 
@@ -232,10 +235,10 @@ for i in range(0, 2):
         # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
 
 model.bake()
-print(model)
+# print(model)
 for s in model.states:
     print s.name
-skf = StratifiedKFold(full_labels, n_folds=7)
+skf = StratifiedKFold(full_labels, n_folds=folds)
 
 for train_index, test_index in skf:
     print("TRAIN:", train_index, "TEST:", test_index)
@@ -248,26 +251,31 @@ for train_index, test_index in skf:
     test_class = full_labels[test_index]
     # print(len(test_class))
     seq = []
-    for s in range(0, len(train_data)):
-        k = 0
-        seq_entry = []
-        while k < 10 and s < len(train_data):
-            seq_entry.append(train_data[s])
-            k += 1
-        seq.append(seq_entry)
+    if batch_train == 1:
+        for s in range(0, len(train_data)):
+            k = 0
+            seq_entry = []
+            while k < 10 and s < len(train_data):
+                seq_entry.append(train_data[s])
+                k += 1
+            seq.append(seq_entry)
+    else:
+        seq = train_data
     # model.fit(list([train_data]), algorithm='baum-welch', verbose='True')
+    # seq = train_data
     model.fit(seq, algorithm='baum-welch', verbose='True')
     # print(model)
     log, path = model.viterbi(test_data)
     print len(path)
     sum_ = 0.0
-    for i in range(0, len(path)):
-        if path[i][1].name != 'Gait-start' and path[i][1].name != 'Gait-end':
+    for i in range(0, len(path)-1):
+        if path[i+1][1].name != 'Gait-start' and path[i+1][1].name != 'Gait-end':
             # print path[i][1].name
             # print test_class[i]
-            if path[i][1].name == state_names[test_class[i-1]]:
+            if path[i+1][1].name == state_names[test_class[i]]:
                 sum_ += 1.0
+    stats.append(sum_ / float(str(len(test_data))))
     print str(sum_) + "/" + str(len(test_data))
     print sum_ / float(str(len(test_data)))
     print '------------------------------------'
-
+scio.savemat('stats.mat', {'stats': stats})
