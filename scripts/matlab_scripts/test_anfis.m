@@ -24,8 +24,11 @@ function test_anfis(ws, thres, window)
         te_in = full_data(teIdx,:);
         te_cl = full_class(teIdx,:);
         
-        output_test = evalfis(te_in, an1);
+        [output_test,IRR,ORR,ARR] = evalfis(te_in, an1);
         assignin('base', 'output_test', output_test);
+        assignin('base', 'IRR', IRR);
+        assignin('base', 'ORR', ORR);
+        assignin('base', 'ARR', ARR);
         
         max_a = max(output,[],1);
         min_a = min(output,[],1);
