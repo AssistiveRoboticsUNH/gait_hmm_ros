@@ -16,6 +16,15 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     use_com, use_ir, use_prox, use_fsr, gran, k, mocap]
     name = [name '.mat']
     assignin('base', 'arg_list', arg_list);
+    
+    if ispc
+        home = [getenv('HOMEDRIVE') getenv('HOMEPATH')];
+    else
+        home = getenv('HOME');
+    end
+    assignin('base', 'home', home);
+    input_names = {}
+    
     if use_rf == 1
         a = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas1_rf.mat');
         a = a.rf;
@@ -31,20 +40,24 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         
         rf_tr = [];
         %use quaternion
-        if use_quat == 1
+         if use_quat == 1
             rf_tr = [rf_tr x(:,1:4)];
+            input_names{end+1}='rf_quat';
         end
         %use gyro
         if use_gyro == 1
             rf_tr = [rf_tr x(:,5:7)];
+            input_names{end+1}='rf_gyro';
         end
         %use accel
         if use_accel == 1
             rf_tr = [rf_tr x(:,8:10)];
+            input_names{end+1}='rf_accel';
         end
         %use comp
         if use_com == 1
             rf_tr = [rf_tr x(:,11:13)];
+            input_names{end+1}='rf_com';
         end
         
         %x = vertcat(d, e);
@@ -95,18 +108,22 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         %use quaternion
         if use_quat == 1
             rll_tr = [rll_tr x(:,1:4)];
+            input_names{end+1}='rll_quat';
         end
         %use gyro
         if use_gyro == 1
             rll_tr = [rll_tr x(:,5:7)];
+            input_names{end+1}='rll_gyro';
         end
         %use accel
         if use_accel == 1
             rll_tr = [rll_tr x(:,8:10)];
+            input_names{end+1}='rll_accel';
         end
         %use comp
         if use_com == 1
             rll_tr = [rll_tr x(:,11:13)];
+            input_names{end+1}='rll_com';
         end
 
         %x = vertcat(d, e);
@@ -157,18 +174,22 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         %use quaternion
         if use_quat == 1
             rul_tr = [rul_tr x(:,1:4)];
+            input_names{end+1='rul_quat';
         end
         %use gyro
         if use_gyro == 1
             rul_tr = [rul_tr x(:,5:7)];
+            input_names{end+1}='rul_gyro';
         end
         %use accel
         if use_accel == 1
             rul_tr = [rul_tr x(:,8:10)];
+            input_names{end+1}='rul_accel';
         end
         %use comp
         if use_com == 1
             rul_tr = [rul_tr x(:,11:13)];
+            input_names{end+1}='rul_com';
         end
 
         %x = vertcat(d, e);
@@ -216,18 +237,22 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         %use quaternion
         if use_quat == 1
             m_tr = [m_tr x(:,1:4)];
+            input_names{end+1}='m_quat'
         end
         %use gyro
         if use_gyro == 1
             m_tr = [m_tr x(:,5:7)];
+            input_names{end+1}='m_gyro'
         end
         %use accel
         if use_accel == 1
             m_tr = [m_tr x(:,8:10)];
+            input_names{end+1}='m_accel'
         end
         %use comp
         if use_com == 1
             m_tr = [m_tr x(:,11:13)];
+            input_names{end+1}='m_com'
         end
 
         %x = vertcat(d, e);
@@ -277,14 +302,17 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     % use fsrs
     if use_fsr == 1
         arduino_tr = [arduino_tr x(:, 1:3)];
+        input_names{end+1}='fsr';
     end
     % use ir
     if use_ir == 1
         arduino_tr = [arduino_tr x(:, 4)];
+        input_names{end+1}='ir';
     end
     %use prox
     if use_prox == 1
-     arduino_tr = [arduino_tr x(:, 5)];
+        arduino_tr = [arduino_tr x(:, 5)];
+        input_names{end+1}='prox';
     end
 
     %x = vertcat(d, e);
@@ -473,10 +501,11 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     output_norm=((repmat(max_a,row,1)-output)./repmat(max_a-min_a,row,1));
     
     assignin('base', 'output_norm', output_norm);
+    assignin('base', 'input_names', input_names);
     
     save(name, 'gf2', 'an1', 'output','output_norm','arg_list', 'arduino_te',  'arduino_tr', 'CVO', 'full_class', 'full_data', 'full_labels', ...
     'labels_tr', 'labels_te', 'm_tr', 'm_te', 'rf_tr', 'rf_te',  'rll_tr', 'rll_te', 'rul_tr', 'rul_te', ...
-    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl')
+    'sensor_data_tr', 'sensor_data_te', 'teIdx', 'trIdx', 'tr_in', 'tr_cl', 'te_in', 'te_cl', 'input_names')
     
 end
 
