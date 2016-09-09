@@ -30,10 +30,10 @@ function test_anfis(ws, thres, window)
         assignin('base', 'ORR', ORR);
         assignin('base', 'ARR', ARR);
         
-        max_a = max(output,[],1);
-        min_a = min(output,[],1);
-        [row,col] = size(output);
-        output_test_norm = ((repmat(max_a,row,1)-output)./repmat(max_a-min_a,row,1));
+        max_a = max(output_test,[],1);
+        min_a = min(output_test,[],1);
+        [row,col] = size(output_test);
+        output_test_norm = ((repmat(max_a,row,1)-output_test)./repmat(max_a-min_a,row,1));
         output_final = output_test_norm;
         means = output_test_norm;
         correct_ones = 0;
