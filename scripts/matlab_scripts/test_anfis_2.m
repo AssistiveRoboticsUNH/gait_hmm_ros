@@ -16,11 +16,18 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
     assignin('base', 'batch_size', batch_size);
     assignin('base', 'input_names', workspace.input_names);
     assignin('base', 'an1', workspace.an1);
+    assignin('base', 'full_data', workspace.full_data);
+    assignin('base', 'full_class', workspace.full_class);
     zeroes_acc = 0.0;
     ones_acc = 0.0;
     total_acc = 0.0;
     input_names_expanded = [];
     input_names
+    full_output = [];
+    full_output_norm = [];
+    full_output_final = [];
+    full_indexes = [];
+    final_class = [];
     for i_n=1:length(input_names);
         kekers = strfind(input_names(i_n), '_quat', 'ForceCellOutput', true);
         check = isempty(kekers{1});
@@ -39,7 +46,7 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
             input_names_expanded = [input_names_expanded ; strcat(input_names(i_n),'_z')];
             continue
         end
-        kekers = strfind(input_names(i_n), '_accek', 'ForceCellOutput', true);
+        kekers = strfind(input_names(i_n), '_accel', 'ForceCellOutput', true);
         check = isempty(kekers{1});
         if(~check)
             input_names_expanded = [input_names_expanded ; strcat(input_names(i_n),'_x')];
@@ -63,13 +70,15 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
             input_names_expanded = [input_names_expanded ; strcat(input_names(i_n),'_fl')];
             continue
         end
+        input_names_expanded = [input_names_expanded ; input_names(i_n)];
     end
     assignin('base', 'input_names_expanded', input_names_expanded);
     %output_list
     for i=1 : k;
         trIdx = CVO.training(i);
         teIdx = CVO.test(i);
-        el = size(find(teIdx==1), 1)
+        teIdx2 = find(teIdx==1);
+        el = size(teIdx2,1);
         
         %for e=15:el;
         %    if(mod(el, e)==0);
@@ -79,18 +88,25 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
         %    end
         %end
         
-        %for e=15:el;
-        %    if(mod(el, e)==0);
-        %        fprintf('Block size : %d\n', e);
-        %        teIdx = randblock(teIdx, e);
-        %        break;
-        %    end
-        %end
+        for e=15:el;
+            if(mod(el, e)==0.0);
+                fprintf('Block size : %d\n', e);
+                %t = find(teIdx==1)
+                %teIdx2 = find(teIdx==1)
+                teIdx = randblock(teIdx2, e);
+                %assignin('base', 'teIdx2', double(teIdx2));
+                %assignin('base', 'teIdx', double(teIdx2));
+                %teIdx2 == teIdx
+                %fdasfsda
+                break;
+            end
+        end
         
         tr_in = full_data(trIdx,:);
         tr_cl = full_class(trIdx,:);
         te_in = full_data(teIdx,:);
         te_cl = full_class(teIdx,:);
+        final_class = [final_class ; te_cl];
         positive = tr_in(find(tr_cl==1),:);
         negative = tr_in(find(tr_cl==0),:);
         [p_inputs_n input_size] = size(positive);
@@ -99,14 +115,13 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
         positive_std = std(positive, 0, 1);
         negative_means = mean(negative, 1);
         negative_std = std(negative, 0, 1);
-        ii=1
-        full_output = []
-        full_output_norm = []
-        full_output_final = []
-        full_indexes=[]
+        ii=1;
+        teIdx = CVO.test(i);
+        el = size(find(teIdx==1), 1)
         while ii <= el;
             indexes=[];
             for ww=1 :batch_size;
+                el
                 if (ww<=batch_size) && (ii<=el);
                     indexes = [indexes ii];
                     ii = ii+1;
@@ -185,12 +200,14 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
                 indexes;
                 m = mean(output_test_norm(indexes));
                 means(indexes) = m;
-                if m <= thres;
+                %if m <= thres;
+                if m > 1.0;
                     output_test_final(indexes) = 1;
                 else
                     output_test_final(indexes) = 0;
                 end
             end
+            full_output_final = [full_output_final ; output_test_final];
             %output_test_final
             %size(te_cl(indexes))
             %size(output_test_final')
@@ -243,8 +260,15 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
     total_acc/k
     ones_acc/k
     zeroes_acc/k
-    assignin('base', 'total_acc', total_acc/k)
-    assignin('base', 'ones_acc', ones_acc/k)
-    assignin('base', 'zeroes_acc', zeroes_acc/k)
-    save(name, 'workspace', 'name', 'thres', 'window', 'k', 'total_acc', 'ones_acc', 'zeroes_acc')
+    assignin('base', 'total_acc', total_acc/k);
+    assignin('base', 'ones_acc', ones_acc/k);
+    assignin('base', 'zeroes_acc', zeroes_acc/k);
+    assignin('base', 'full_output', full_output);
+    assignin('base', 'full_output_norm', full_output_norm);
+    assignin('base', 'full_output_final', full_output_final);
+    assignin('base', 'full_indexes', full_indexes);
+    assignin('base', 'final_class', final_class);
+    save(name, 'workspace', 'name', 'thres', 'window', 'k', 'total_acc',...
+    'ones_acc', 'zeroes_acc', 'full_output','full_output_norm',...
+    'full_output_final', 'full_indexes','full_data', 'full_class','final_class')
 end
