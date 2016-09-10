@@ -5,6 +5,7 @@ import pickle
 import numpy as np
 import entry_data as ed
 import imu_callbacks as iparam
+import matlab.engine
 from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import normalize
@@ -15,20 +16,59 @@ from pomegranate import MultivariateGaussianDistribution as MGD
 from scipy import io as scio
 
 rospy.init_node('dis_class_2')
+input_names = []
+device_names = []
+imus_used = ""
 pref = rospy.get_param('~prefix', "none")
 use_quat = rospy.get_param('~use_quat', 0)
+if use_quat == 1:
+    input_names.append("quat")
+    imus_used += "quat_"
 use_gyro = rospy.get_param('~use_gyro', 0)
+if use_gyro == 1:
+    input_names.append("gyro")
+    imus_used += "gyro_"
 use_accel = rospy.get_param('~use_accel', 0)
+if use_accel == 1:
+    input_names.append("accel")
+    imus_used += "accel_"
 use_com = rospy.get_param('~use_com', 0)
+if use_com == 1:
+    input_names.append("com")
+    imus_used += "com_"
 use_fsr = rospy.get_param('~use_fsr', 0)
+if use_fsr == 1:
+    input_names.append("fsr")
+    imus_used += "fsr_"
 use_ir = rospy.get_param('~use_ir', 0)
+if use_ir == 1:
+    input_names.append("ir")
+    imus_used += "ir_"
 use_prox = rospy.get_param('~use_prox', 0)
+if use_prox == 1:
+    input_names.append("prox")
+    imus_used += "prox_"
 folds = rospy.get_param('~folds', 10)
 batch_train = rospy.get_param('~batch_train', 1)
+if batch_train == 1:
+    imus_used += "btr_"
+batch_test = rospy.get_param('~batch_test', 1)
+if batch_test == 1:
+    imus_used += "bte_"
 rospack = rospkg.RosPack()
 path = rospack.get_path('gait_hmm_ros') + '/scripts/'
 
 stats = []
+print("Use quat: "+str(use_quat))
+print("Use gyro: "+str(use_gyro))
+print("Use accel: "+str(use_accel))
+print("Use com: "+str(use_com))
+print("Use fsr: "+str(use_fsr))
+print("Use ir: "+str(use_ir))
+print("Use prox: "+str(use_prox))
+print("Folds: "+str(folds))
+print("Batch train: "+str(batch_train))
+print("Batch test: "+str(batch_test))
 
 names = ['andreas1', 'andreas2', 'andreas3', 'andreas4', 'andreas5']
 
@@ -41,10 +81,25 @@ join_names_full = iparam.imu_names_full
 total_sensors = len(imu_names)
 total_entries = 0
 
+classifier_name = pref+"_classifier.p"
+# if batch_train == 1:
+#    classifier_name = pref + "_classifier_batch.p"
+# classifier = []
+
+max_acc = 0.0
+
 sum = 0
 full_data = []
 full_labels = []
 class_data = [[] for x in range(0, 2)]
+
+# eng = matlab.engine.start_matlab()
+# eng.sqrt(2.0)
+# eng.load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/matlab_scripts/fsr_anfis_with_ir_prox_chk.mat', nargout=0)
+# eng.evalfis([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], eng.workspace['an1'], nargout=0)
+# anfis = eng.workspace['an1']
+# fis = eng.test_anfis_2('fsr_anfis_with_ir_prox_chk.mat', 0.4, 20, 1, 20, 0.9, nargout=0)
+# exit()
 #####################
 # Load enabled IMUS #
 #####################
@@ -55,6 +110,7 @@ for filename in names:
         full_name = pref + "_" + name + ".mat"
         # print full_name
         if os.path.isfile(full_name):
+            imus_used += (name + "_")
             rospy.logwarn("Loading" + full_name)
             x = scio.loadmat(full_name)
             x = x.get(name)
@@ -110,7 +166,8 @@ for filename in names:
     # print(sensor_data[0])
     # print(len(sensor_data))
     # print(len(sensor_data[0]))
-
+    print imus_used
+    # exit()
     labels = scio.loadmat(pref+"_labels_mocap_annotated.mat")
     labels = labels.get("labels")
     labels = labels[0]
@@ -127,25 +184,27 @@ for filename in names:
     else:
         full_labels = np.concatenate((full_labels, labels), axis=0)
 
-    # if labels[0] == 0:
-    #     if class_data[0] == []:
-    #         class_data[0] = labels
-    #     else:
-    #         class_data[0] = np.concatenate((class_data[0], labels), axis = 0)
-    # else:
-    #     if class_data[1] == []:
-    #         class_data[1] = labels
-    #     else:
-    #         class_data[1] = np.concatenate((class_data[1], labels), axis = 0)
+        # if labels[0] == 0:
+        #     if class_data[0] == []:
+        #         class_data[0] = labels
+        #     else:
+        #         class_data[0] = np.concatenate((class_data[0], labels), axis = 0)
+        # else:
+        #     if class_data[1] == []:
+        #         class_data[1] = labels
+        #     else:
+        #         class_data[1] = np.concatenate((class_data[1], labels), axis = 0)
+
 
 labels = []
 sensor_data = []
-print len(full_data[0])
-print len(full_data)
-print sum
-print full_data[0]
-
-print len(full_labels)
+# print len(full_data[0])
+# print len(full_data)
+# print sum
+# print full_data[0]
+pickle.dump(full_data, open(imus_used+"full_data.p", 'wb'))
+pickle.dump(full_labels, open(imus_used+"full_labels.p", 'wb'))
+# print len(full_labels)
 
 startprob = [0.5, 0.5]
 
@@ -160,10 +219,11 @@ class_std = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
 class_cov = []
 classifiers = []
 
+imus_used = pref+("_"+imus_used+"classifier.p")
 
 # print class_data[0]
 # print class_data[1]
-print (len(class_data[0]) + len(class_data[1]))
+# print (len(class_data[0]) + len(class_data[1]))
 
 for i in range(0, 2):
     cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
@@ -265,6 +325,19 @@ for train_index, test_index in skf:
     # seq = train_data
     model.fit(seq, algorithm='baum-welch', verbose='True')
     # print(model)
+
+    seq = []
+    if batch_test == 1:
+        for s in range(0, len(test_data)):
+            k = 0
+            seq_entry = []
+            while k < 10 and s < len(test_data):
+                seq_entry.append(test_data[s])
+                k += 1
+            seq.append(seq_entry)
+    else:
+        seq = test_data
+
     log, path = model.viterbi(test_data)
     print len(path)
     sum_ = 0.0
@@ -274,8 +347,14 @@ for train_index, test_index in skf:
             # print test_class[i]
             if path[i+1][1].name == state_names[test_class[i]]:
                 sum_ += 1.0
+    acc = sum_ / float(str(len(test_data)))
+    if acc > max_acc:
+        max_acc = acc
+        classifier = model
     stats.append(sum_ / float(str(len(test_data))))
     print str(sum_) + "/" + str(len(test_data))
     print sum_ / float(str(len(test_data)))
     print '------------------------------------'
+    pickle.dump(classifier, open(imus_used, 'wb'))
+pickle.dump(classifier, open(imus_used, 'wb'))
 scio.savemat('stats.mat', {'stats': stats})
