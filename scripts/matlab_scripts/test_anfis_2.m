@@ -117,11 +117,10 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
         negative_std = std(negative, 0, 1);
         ii=1;
         teIdx = CVO.test(i);
-        el = size(find(teIdx==1), 1)
+        el = size(find(teIdx==1), 1);
         while ii <= el;
             indexes=[];
             for ww=1 :batch_size;
-                el
                 if (ww<=batch_size) && (ii<=el);
                     indexes = [indexes ii];
                     ii = ii+1;
@@ -134,7 +133,15 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
             %indexes
             %size(te_in)
             %te_in(indexes, :)
-            [output_test,IRR,ORR,ARR] = evalfis(te_in(indexes,:), an1);
+            b = 1
+            output_test=[]
+            while b <= numel(indexes)
+                [output,IRR,ORR,ARR] = evalfis(te_in(indexes(b),:), an1);
+                output_test = [output_test ;output];
+                b=b+1;
+            end
+            %[output_test,IRR,ORR,ARR] = evalfis(te_in(indexes,:), an1);
+            output_test
             full_output = [full_output; output_test];
             test_means = mean(te_in(indexes,:), 1);
             test_std = std(te_in(indexes), 0 ,1);
@@ -198,10 +205,11 @@ function test_anfis(ws, thres, window, batch_training, batch_size, rule_thres)
                     j = j+1;
                 end
                 indexes;
-                m = mean(output_test_norm(indexes));
+                %m = mean(output_test_norm(indexes));
+                m = mean(output_test(indexes));
                 means(indexes) = m;
                 %if m <= thres;
-                if m > 1.0;
+                if m > 0.8;
                     output_test_final(indexes) = 1;
                 else
                     output_test_final(indexes) = 0;
