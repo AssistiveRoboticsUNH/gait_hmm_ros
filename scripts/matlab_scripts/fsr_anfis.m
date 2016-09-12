@@ -369,6 +369,7 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         labels_te = e;
     end    
     
+    input_names{end+1}='gait_label';
 
     clear a
     clear b

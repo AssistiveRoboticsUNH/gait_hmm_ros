@@ -98,8 +98,8 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         b = b.rll;
         c = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas3_rll.mat');
         c = c.rll;
-        e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas4_rll.mat');
-        e = d.rll;
+        d = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas4_rll.mat');
+        d = d.rll;
         %e = load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/andreas5_rll.mat');
         %e = e.rll;
         x = vertcat(a, b, c);
@@ -174,7 +174,7 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
         %use quaternion
         if use_quat == 1
             rul_tr = [rul_tr x(:,1:4)];
-            input_names{end+1='rul_quat';
+            input_names{end+1}='rul_quat';
         end
         %use gyro
         if use_gyro == 1
@@ -382,6 +382,7 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     size(sensor_data_tr);
     size(sensor_data_te);
     
+    input_names{end+1}='gait_label';
     
     assignin('base', 'labels_tr', labels_tr);
     assignin('base', 'labels_te', labels_te);

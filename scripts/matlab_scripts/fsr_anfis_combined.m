@@ -368,13 +368,16 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     end    
     
     %labels_te = e;
-
+    input_names{end+1}='gait_label';
+    
     clear a
     clear b
     clear c
     clear d
     clear e
     clear x
+    
+    
     
     size(sensor_data_tr);
     size(sensor_data_te);
@@ -404,7 +407,6 @@ use_com, use_ir, use_prox, use_fsr, name, gran, k, mocap)
     
     assignin('base', 'full_data', full_data);
     assignin('base', 'full_labels', full_labels);
-
 
     d = size(sensor_data_tr);
     tr_class = ones(d(1),1);
