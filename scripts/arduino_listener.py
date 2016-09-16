@@ -17,6 +17,7 @@ def make_msg(frame):
     # data = frame
     fr_data = (frame['rf_data'][1:-1]).split(",")
     #print fr_data[0]
+    data.header.frame_id = 'arduino'
     data.sequ = int(fr_data[0])
     data.ir = float(fr_data[1])
     data.prox = float(fr_data[2])
