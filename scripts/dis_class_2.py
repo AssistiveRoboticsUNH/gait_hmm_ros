@@ -202,8 +202,8 @@ sensor_data = []
 # print len(full_data)
 # print sum
 # print full_data[0]
-pickle.dump(full_data, open(imus_used+"full_data.p", 'wb'))
-pickle.dump(full_labels, open(imus_used+"full_labels.p", 'wb'))
+pickle.dump(full_data, open(pref+"_"+imus_used+"full_data.p", 'wb'))
+pickle.dump(full_labels, open(pref+"_"+imus_used+"full_labels.p", 'wb'))
 # print len(full_labels)
 
 startprob = [0.5, 0.5]
