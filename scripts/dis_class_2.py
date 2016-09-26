@@ -3,13 +3,11 @@ import rospy
 import rospkg
 import pickle
 import numpy as np
-import entry_data as ed
 import imu_callbacks as iparam
 import matlab.engine
 from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import normalize
-from entry_data import DataEntry, fullEntry
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
@@ -19,6 +17,7 @@ rospy.init_node('dis_class_2')
 input_names = []
 device_names = []
 imus_used = ""
+joint_names = []
 pref = rospy.get_param('~prefix', "none")
 use_quat = rospy.get_param('~use_quat', 0)
 if use_quat == 1:
@@ -55,9 +54,25 @@ if batch_train == 1:
 batch_test = rospy.get_param('~batch_test', 1)
 if batch_test == 1:
     imus_used += "bte_"
-rospack = rospkg.RosPack()
-path = rospack.get_path('gait_hmm_ros') + '/scripts/'
 
+rf = rospy.get_param('~rf', "")
+if rf != "":
+    joint_names.append("rf")
+
+rll = rospy.get_param('~rll', "")
+if rll != "":
+    joint_names.append("rll")
+
+rul = rospy.get_param('~rll', "")
+if rul != "":
+    joint_names.append("rul")
+
+m = rospy.get_param('~m', "")
+if m != "":
+    joint_names.append("m")
+
+rospack = rospkg.RosPack()
+fpath = rospack.get_path('gait_hmm_ros') + '/scripts/'
 stats = []
 print("Use quat: "+str(use_quat))
 print("Use gyro: "+str(use_gyro))
@@ -69,49 +84,47 @@ print("Use prox: "+str(use_prox))
 print("Folds: "+str(folds))
 print("Batch train: "+str(batch_train))
 print("Batch test: "+str(batch_test))
+print("Right Foot Topic: "+rf)
+print("Right Lower Leg Topic: "+rll)
+print("Right Upper Leg Foot Topic: "+rul)
+print("Waist Foot Topic: "+m)
+print joint_names
 
 names = ['andreas1', 'andreas2', 'andreas3', 'andreas4', 'andreas5']
 
-joint_names = iparam.imu_names
-
 imu_names = iparam.imu_param_names
-
-join_names_full = iparam.imu_names_full
 
 total_sensors = len(imu_names)
 total_entries = 0
 
-classifier_name = pref+"_classifier.p"
-# if batch_train == 1:
-#    classifier_name = pref + "_classifier_batch.p"
-# classifier = []
-
 max_acc = 0.0
 
 sum = 0
+
 full_data = []
 full_labels = []
 class_data = [[] for x in range(0, 2)]
 
 # eng = matlab.engine.start_matlab()
 # eng.sqrt(2.0)
-# eng.load('/home/lydakis-local/ros_ws/src/gait_hmm_ros/scripts/matlab_scripts/fsr_anfis_with_ir_prox_chk.mat', nargout=0)
 # eng.evalfis([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], eng.workspace['an1'], nargout=0)
 # anfis = eng.workspace['an1']
 # fis = eng.test_anfis_2('fsr_anfis_with_ir_prox_chk.mat', 0.4, 20, 1, 20, 0.9, nargout=0)
 # exit()
+
 #####################
 # Load enabled IMUS #
 #####################
 for filename in names:
     sensor_data = []
-    pref = path + filename
+    pref = fpath + filename
     for name in joint_names:
         full_name = pref + "_" + name + ".mat"
-        # print full_name
+        # rospy.logwarn(full_name)
         if os.path.isfile(full_name):
-            imus_used += (name + "_")
-            rospy.logwarn("Loading" + full_name)
+            if name not in imus_used:
+                imus_used += (name + "_")
+            # rospy.logwarn("Loading" + full_name)
             x = scio.loadmat(full_name)
             x = x.get(name)
             total_entries = len(x)
@@ -126,20 +139,20 @@ for filename in names:
                     entry = np.concatenate((entry, x[i, 7:10]), axis=0)
                 if use_com == 1:
                     entry = np.concatenate((entry, x[i, 10:13]), axis=0)
-                # print(len(entry))
+                # rospy.logwarn(len(entry))
                 data_entry.append(entry)
-            print len(data_entry)
+            # rospy.logwarn(len(data_entry))
             if sensor_data == []:
                 sensor_data = data_entry
             else:
                 sensor_data = np.concatenate((sensor_data, data_entry), axis=1)
-                # print total_entries
+                rospy.logwarn(total_entries)
     x = []
     arduino = scio.loadmat(pref + "_arduino.mat")
     arduino = arduino.get("arduino")
     arduino_data = []
-    # print arduino
-    # print len(arduino)
+    # rospy.logwarn(arduino)
+    # rospy.logwarn(len(arduino))
     for i in range(0, len(arduino)):
         entry = []
         # print arduino[i]
@@ -153,26 +166,10 @@ for filename in names:
             entry = np.concatenate((entry, arduino[i, 7:8]), axis=0)
         arduino_data.append(entry)
     arduino = []
-
-    # print arduino_data[0]
-    # print len(arduino_data)
-    # print len(arduino_data[0])
-
-    # print sensor_data[0]
-    # print len(sensor_data)
-    # print len(sensor_data[0])
-
     sensor_data = np.concatenate((sensor_data, arduino_data), axis=1)
-    # print(sensor_data[0])
-    # print(len(sensor_data))
-    # print(len(sensor_data[0]))
-    print imus_used
-    # exit()
     labels = scio.loadmat(pref+"_labels_mocap_annotated.mat")
     labels = labels.get("labels")
     labels = labels[0]
-    # print labels
-    # print len(labels)
     if full_data == []:
         full_data = sensor_data
     else:
@@ -184,27 +181,11 @@ for filename in names:
     else:
         full_labels = np.concatenate((full_labels, labels), axis=0)
 
-        # if labels[0] == 0:
-        #     if class_data[0] == []:
-        #         class_data[0] = labels
-        #     else:
-        #         class_data[0] = np.concatenate((class_data[0], labels), axis = 0)
-        # else:
-        #     if class_data[1] == []:
-        #         class_data[1] = labels
-        #     else:
-        #         class_data[1] = np.concatenate((class_data[1], labels), axis = 0)
-
+rospy.logwarn(full_name)
+rospy.logwarn(imus_used)
 
 labels = []
 sensor_data = []
-# print len(full_data[0])
-# print len(full_data)
-# print sum
-# print full_data[0]
-pickle.dump(full_data, open(pref+"_"+imus_used+"full_data.p", 'wb'))
-pickle.dump(full_labels, open(pref+"_"+imus_used+"full_labels.p", 'wb'))
-# print len(full_labels)
 
 startprob = [0.5, 0.5]
 
@@ -213,25 +194,26 @@ for i in range(0, len(full_data)):
         class_data[0].append(full_data[i])
     else:
         class_data[1].append(full_data[i])
-class_means = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
-class_vars = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
-class_std = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
-class_cov = []
-classifiers = []
 
-imus_used = pref+("_"+imus_used+"classifier.p")
+# class_means = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
+# class_vars = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
+# class_std = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
+# class_cov = []
+# classifiers = []
 
-# print class_data[0]
-# print class_data[1]
-# print (len(class_data[0]) + len(class_data[1]))
+pickle.dump(full_data, open(fpath+"/trained_classifiers/"+imus_used+"full_data.p", 'wb'))
+pickle.dump(full_labels, open(fpath+"/trained_classifiers/"+imus_used+"full_labels.p", 'wb'))
 
-for i in range(0, 2):
-    cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
-    class_cov.append(cov)
-    for j in range(0, len(full_data[0])):
-        class_means[i][j] = np.array(class_data[i][:])[:, [j]].mean(axis=0)
-        class_vars[i][j] = np.array(class_data[i][:])[:, [j]].var(axis=0)
-        class_std[i][j] = np.array(class_data[i][:])[:, [j]].std(axis=0)
+# for i in range(0, 2):
+#     cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
+#     class_cov.append(cov)
+#     for j in range(0, len(full_data[0])):
+#         class_means[i][j] = np.array(class_data[i][:])[:, [j]].mean(axis=0)
+#         class_vars[i][j] = np.array(class_data[i][:])[:, [j]].var(axis=0)
+#         class_std[i][j] = np.array(class_data[i][:])[:, [j]].std(axis=0)
+#         if np.isnan(np.sum(class_means[i][j])) or np.isnan(np.sum(class_vars[i][j])) or np.isnan(np.sum(class_std[i][j])):
+#             rospy.logerr("NAN OR inf values")
+#             exit()
 
 t = np.zeros((2, 2))
 
@@ -250,23 +232,6 @@ for i in range(0, len(full_labels)):
 
 t = t/sum
 print t
-# print cov
-# print class_means
-# print class_vars
-# print class_std
-
-# for i in range(0, 2):
-#     cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
-#     class_cov.append(cov)
-#     for j in range(0, len(full_data[0])):
-#         class_means[i][j] = class_data[i][:][j].mean(axis=0)
-#         class_vars[i][j] = class_data[i][:][j].var(axis=0)
-#         class_std[i][j] = class_data[i][:][j].std(axis=0)
-
-# print cov
-# print class_means
-# print class_vars
-# print class_std
 
 distros = []
 hmm_states = []
@@ -276,31 +241,43 @@ for i in range(0, 2):
     # print np.array(class_means[i]).shape
     # print np.array(class_cov[i]).shape
     # dis = MultivariateGaussianDistribution(np.array(class_means[i]).transpose(), class_cov[i])
-    dis = MGD \
-        (np.array(class_means[i]).flatten(),
-         np.array(class_cov[i]))
+    # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
+    dis = MGD.from_samples(class_data[i])
     st = State(dis, name=state_names[i])
     distros.append(dis)
     hmm_states.append(st)
-model = HMM(name="Gait")
 
+    # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
 
-model.add_states(hmm_states)
-model.add_transition(model.start, hmm_states[0], 0.5)
-model.add_transition(model.start, hmm_states[1], 0.5)
-
-for i in range(0, 2):
-    for j in range(0, 2):
-        model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
-        # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
-
-model.bake()
+# model.bake()
 # print(model)
-for s in model.states:
-    print s.name
+# for s in model.states:
+#    print s.name
+
 skf = StratifiedKFold(full_labels, n_folds=folds)
 
 for train_index, test_index in skf:
+
+    model = HMM(name="Gait")
+    hmm_states = []
+    
+    for i in range(0, 2):
+        # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
+        dis = MGD.from_samples(class_data[i])
+        st = State(dis, name=state_names[i])
+        distros.append(dis)
+        hmm_states.append(st)
+
+    model.add_states(hmm_states)
+    model.add_transition(model.start, hmm_states[0], 0.5)
+    model.add_transition(model.start, hmm_states[1], 0.5)
+
+    for i in range(0, 2):
+        for j in range(0, 2):
+            model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
+
+    model.bake()
+    rospy.logwarn("Baked model")
     print("TRAIN:", train_index, "TEST:", test_index)
     train_data = full_data[train_index]
     # print(len(train_data))
@@ -311,11 +288,12 @@ for train_index, test_index in skf:
     test_class = full_labels[test_index]
     # print(len(test_class))
     seq = []
+
     if batch_train == 1:
         for s in range(0, len(train_data)):
             k = 0
             seq_entry = []
-            while k < 10 and s < len(train_data):
+            while k < 20 and s < len(train_data):
                 seq_entry.append(train_data[s])
                 k += 1
             seq.append(seq_entry)
@@ -323,6 +301,12 @@ for train_index, test_index in skf:
         seq = train_data
     # model.fit(list([train_data]), algorithm='baum-welch', verbose='True')
     # seq = train_data
+
+    # Check for empty seq
+    if seq == []:
+        rospy.logerr("Empty fitting sequence")
+        continue
+
     model.fit(seq, algorithm='baum-welch', verbose='True')
     # print(model)
 
@@ -331,15 +315,21 @@ for train_index, test_index in skf:
         for s in range(0, len(test_data)):
             k = 0
             seq_entry = []
-            while k < 10 and s < len(test_data):
+            while k < 20 and s < len(test_data):
                 seq_entry.append(test_data[s])
                 k += 1
             seq.append(seq_entry)
     else:
         seq = test_data
 
-    log, path = model.viterbi(test_data)
-    print len(path)
+    if seq == [] or test_data == []:
+        rospy.logerr("Empty testing sequence")
+        continue
+
+    rospy.logwarn("Start Viterbi")
+    log, path = model.viterbi(seq)
+    rospy.logwarn("Viterbi Done")
+    # rospy.logwarn(len(path))
     sum_ = 0.0
     for i in range(0, len(path)-1):
         if path[i+1][1].name != 'Gait-start' and path[i+1][1].name != 'Gait-end':
@@ -352,9 +342,9 @@ for train_index, test_index in skf:
         max_acc = acc
         classifier = model
     stats.append(sum_ / float(str(len(test_data))))
-    print str(sum_) + "/" + str(len(test_data))
-    print sum_ / float(str(len(test_data)))
-    print '------------------------------------'
-    pickle.dump(classifier, open(imus_used, 'wb'))
-pickle.dump(classifier, open(imus_used, 'wb'))
+    # print str(sum_) + "/" + str(len(test_data))
+    # print sum_ / float(str(len(test_data)))
+    # print '------------------------------------'
+    pickle.dump(classifier, open(fpath+"/trained_classifiers/"+imus_used+"classifier.p", 'wb'))
+pickle.dump(classifier, open(fpath+"/trained_classifiers/"+imus_used+"classifier.p", 'wb'))
 scio.savemat('stats.mat', {'stats': stats})
