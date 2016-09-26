@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
     FILES
     ardu_msg.msg
+    imu_vector.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -115,7 +116,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-    CATKIN_DEPENDS message_runtime
+    CATKIN_DEPENDS message_runtime std_msgs
 #  INCLUDE_DIRS include
 #  LIBRARIES gait_hmm_ros
 #  CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs tf tf2
