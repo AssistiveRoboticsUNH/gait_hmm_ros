@@ -10,7 +10,7 @@ from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
 from random import randint
 
-rospy.init_node('classifier_test')
+rospy.init_node('sample_publisher')
 rospack = rospkg.RosPack()
 prefix = rospy.get_param('~prefix', "quat_bte_rf_rll_rul_m_")
 window = rospy.get_param('~window', 10)
@@ -70,6 +70,6 @@ while not rospy.is_shutdown():
         vec.data = negative_dis.sample()
         pub.publish(vec)
         neg.append(vec.data)
-    rospy.logwarn(str(pos_num)+" "+str(pos))
-    rospy.logwarn(str(neg_num)+" "+str(neg))
-    rospy.logwarn("--------------")
+    # rospy.logwarn(str(pos_num)+" "+str(pos))
+    # rospy.logwarn(str(neg_num)+" "+str(neg))
+    # rospy.logwarn("--------------")
