@@ -4,17 +4,26 @@ import rospkg
 import geometry_msgs.msg
 from threespace_ros.msg import dataVec
 
-imu_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
-             'rw', 'ls', 'lua', 'lla', 'lw']
+imu_names = ['rf', 'rll', 'rul',
+             'lf', 'lll', 'lul',
+             'm', 'ch',
+             'rs', 'rua', 'rla',
+             'rw', 'ls', 'lua', 'lla', 'lw',
+             'temp_1', 'temp_2', 'temp_3', 'temp_4']
 
-imu_param_names = ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',
-                   '~rw', '~ls', '~lua', '~lla', '~lw']
+imu_param_names = ['~rf', '~rll', '~rul',
+                   '~lf', '~lll', '~lua', '~lul',
+                   '~m', '~ch',
+                   '~rs', '~rua', '~rla', '~rw',
+                   '~ls', '~lua', '~lla', '~lw',
+                   '~temp_1', '~temp_2', '~temp_3', '~temp_4']
 
 imu_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
                   'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
                   'Mid', 'Chest',
                   'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
-                  'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
+                  'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist',
+                  'temp_1', 'temp_2', 'temp_3', 'temp_4']
 
 dataVectors = [dataVec for i in range(0, 13)]
 
