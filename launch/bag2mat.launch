@@ -1,16 +1,17 @@
 <launch>
-	<arg name = "prefix" default = "umass_data/andreas1" />
+	<arg name = "prefix" default = "new_bags/subject3_6" />
+	<rosparam file="$(find gait_hmm_ros)/scripts/$(arg param_file)" command="load"/>
 	<arg name = "matfile" default = "none" />
 	<node name = "bag2pickle" pkg="gait_hmm_ros" type = "bag2mat.py" output = "screen" required = "true" >
 		<param name = "prefix" value = "$(arg prefix)" />
 		<param name = "matfile" type = "" value = "$(arg matfile)" />
-		<param name = "rf" type = "string" value = "r_upper_arm_data_vec" />
-		<param name = "rll" type = "string" value = "r_lower_arm_data_vec" />
-		<param name = "rul" type = "string" value = "l_hand_data_vec" />
+		<param name = "rf" type = "string" value = "" />
+		<param name = "rll" type = "string" value = "" />
+		<param name = "rul" type = "string" value = "" />
 		<param name = "lf" type = "string" value = "" />
 		<param name = "lll" type = "string" value = "" />
 		<param name = "lul" type = "string" value = "" />
-		<param name = "m" type = "string" value = "r_hand_data_vec" />
+		<param name = "m" type = "string" value = "" />
 		<param name = "ch" type = "string" value = "" />
 		<param name = "h" type = "string" value = "" />
 		<param name = "ls" type = "string" value = "" />

@@ -1,5 +1,4 @@
 #!/bin/bash
-roscore &
 rosparam set /subject "subject2"
 rosparam set /normlabels "[1, 1, 0, 0 ,0, 0]"
 rosparam set /filenames "['new_bags/subject2_1', 'new_bags/subject2_2', 'new_bags/subject2_3',

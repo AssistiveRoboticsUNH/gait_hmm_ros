@@ -21,6 +21,10 @@
           /r_lower_arm_data_vec
           /r_hand_data_vec
           /head_data_vec
+	  /temp_1_data_vec
+	  /temp_2_data_vec
+	  /temp_3_data_vec
+	  /temp_4_data_vec
           "
     />
 </launch>

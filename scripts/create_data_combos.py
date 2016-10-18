@@ -12,6 +12,7 @@ input_names = []
 device_names = []
 imus_used = ""
 joint_names = []
+dup_list = []
 pref = rospy.get_param('~prefix', "none")
 use_quat = rospy.get_param('~use_quat', 0)
 if use_quat == 1:
@@ -52,37 +53,44 @@ if batch_test == 1:
 rf = rospy.get_param('~rf', "")
 if rf != "":
     joint_names.append("rf")
+    dup_list.append(rf)
 
 rll = rospy.get_param('~rll', "")
 if rll != "":
     joint_names.append("rll")
+    dup_list.append(rll)
 
-rul = rospy.get_param('~rll', "")
+rul = rospy.get_param('~rul', "")
 if rul != "":
     joint_names.append("rul")
+    dup_list.append(rul)
 
 m = rospy.get_param('~m', "")
 if m != "":
     joint_names.append("m")
+    dup_list.append(m)
+
+if len(dup_list) != len(set(dup_list)):
+    rospy.logerr("Topic naming error detected, check for doubles")
+    exit()
 
 rospack = rospkg.RosPack()
 fpath = rospack.get_path('gait_hmm_ros') + '/scripts/'
 stats = []
-print("Path :"+fpath)
-print("Use quat: "+str(use_quat))
-print("Use gyro: "+str(use_gyro))
-print("Use accel: "+str(use_accel))
-print("Use com: "+str(use_com))
-print("Use fsr: "+str(use_fsr))
-print("Use ir: "+str(use_ir))
-print("Use prox: "+str(use_prox))
-print("Batch train: "+str(batch_train))
-print("Batch test: "+str(batch_test))
-print("Right Foot Topic: "+rf)
-print("Right Lower Leg Topic: "+rll)
-print("Right Upper Leg Foot Topic: "+rul)
-print("Waist Foot Topic: "+m)
-print joint_names
+rospy.loginfo("Path :"+fpath)
+rospy.loginfo("Use quat: "+str(use_quat))
+rospy.loginfo("Use gyro: "+str(use_gyro))
+rospy.loginfo("Use accel: "+str(use_accel))
+rospy.loginfo("Use com: "+str(use_com))
+rospy.loginfo("Use fsr: "+str(use_fsr))
+rospy.loginfo("Use ir: "+str(use_ir))
+rospy.loginfo("Use prox: "+str(use_prox))
+rospy.loginfo("Batch train: "+str(batch_train))
+rospy.loginfo("Batch test: "+str(batch_test))
+rospy.loginfo("Right Foot Topic: "+rf)
+rospy.loginfo("Right Lower Leg Topic: "+rll)
+rospy.loginfo("Right Upper Leg Foot Topic: "+rul)
+rospy.loginfo("Waist Foot Topic: "+m)
 
 imu_names = iparam.imu_param_names
 
@@ -119,7 +127,7 @@ for filename in names:
         full_name = pref + "_" + name + ".mat"
         # rospy.logwarn(full_name)
         if os.path.isfile(full_name):
-            if name not in imus_used:
+            if ("_" + name + "_") not in imus_used:
                 imus_used += (name + "_")
             # rospy.logwarn("Loading" + full_name)
             x = sio.loadmat(full_name)
@@ -145,6 +153,10 @@ for filename in names:
                 sensor_data = data_entry
             else:
                 sensor_data = np.concatenate((sensor_data, data_entry), axis=1)
+        else:
+            rospy.logerr("Data file not found : "+full_name)
+            exit()
+
 
     x = []
     arduino = sio.loadmat(pref + "_arduino.mat")
@@ -196,3 +208,5 @@ sio.savemat(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data_normali
 
 pickle.dump(normlabels, open(fpath+"/new_bags/datasets/"+subject+"_normal_labels.p", 'wb'))
 sio.savemat(fpath+"/new_bags/datasets/"+subject+"_normal_labels.mat", mdict={"norm_labels": normlabels})
+
+
