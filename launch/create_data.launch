@@ -1,0 +1,61 @@
+<launch>
+	<rosparam file="$(find gait_hmm_ros)/scripts/clear_params.yaml" command="load"/>
+    <arg name = "prefix" default = "andreas1" />
+	<arg name = "matfile" default = "none" />
+	<arg name = "batch_train" default = "1"/>
+	<arg name = "batch_test" default = "1"/>
+	<arg name = "use_quat" default = "1"/>
+	<arg name = "use_gyro" default = "1"/>
+	<arg name = "use_accel" default = "1"/>
+	<arg name = "use_com" default = "1"/>
+	<arg name = "use_ir" default = "1"/>
+	<arg name = "use_prox" default = "1"/>
+	<arg name = "use_fsr" default = "1"/>
+    <arg name = "rf" default="" />
+    <arg name = "rll" default="" />
+    <arg name = "rul" default="" />
+    <arg name = "lf" default="" />
+    <arg name = "lll" default="" />
+    <arg name = "lul" default="" />
+    <arg name = "m" default="" />
+    <arg name = "ch" default="" />
+    <arg name = "h" default="" />
+    <arg name = "ls" default="" />
+    <arg name = "rs" default="" />
+    <arg name = "rua" default="" />
+    <arg name = "rla" default="" />
+    <arg name = "rh" default="" />
+    <arg name = "lua" default="" />
+    <arg name = "lla" default="" />
+    <arg name = "lh" default="" />
+	<node name = "create_data" pkg="gait_hmm_ros" type = "create_data_combos.py" output = "screen" required = "true" >
+		<param name = "prefix" value = "$(arg prefix)" />
+		<param name = "matfile" type = "" value = "$(arg matfile)" />
+		<param name = "batch_train" type = "int" value = "$(arg batch_train)" />
+		<param name = "batch_test" type = "int" value = "$(arg batch_test)" />
+		<param name = "rf" type = "string" value = "$(arg rf)" />
+		<param name = "rll" type = "string" value = "$(arg rll)" />
+		<param name = "rul" type = "string" value = "$(arg rul)" />
+		<param name = "lf" type = "string" value = "$(arg lf)" />
+		<param name = "lll" type = "string" value = "$(arg lll)" />
+		<param name = "lul" type = "string" value = "$(arg lul)" />
+		<param name = "m" type = "string" value = "$(arg m)" />
+		<param name = "ch" type = "string" value = "$(arg ch)" />
+		<param name = "h" type = "string" value = "$(arg h)" />
+		<param name = "ls" type = "string" value = "$(arg ls)" />
+		<param name = "rs" type = "string" value = "$(arg rs)" />
+		<param name = "rua" type = "string" value = "$(arg rua)" />
+		<param name = "rla" type = "string" value = "$(arg rla)" />
+		<param name = "rh" type = "string" value = "$(arg rh)" />
+		<param name = "lua" type = "string" value = "$(arg lua)" />
+		<param name = "lla" type = "string" value = "$(arg lla)" />
+		<param name = "lh" type = "string" value = "$(arg lh)" />
+		<param name = "use_quat" type = "int" value = "$(arg use_quat)"/>
+		<param name = "use_gyro" type = "int" value = "$(arg use_gyro)"/>
+		<param name = "use_accel" type = "int" value = "$(arg use_accel)"/>
+		<param name = "use_com" type = "int" value = "$(arg use_com)"/>
+        <param name = "use_fsr" type = "int" value = "$(arg use_fsr)"/>
+        <param name = "use_ir" type = "int" value = "$(arg use_ir)"/>
+        <param name = "use_prox" type = "int" value = "$(arg use_prox)"/>
+	</node>
+</launch>
