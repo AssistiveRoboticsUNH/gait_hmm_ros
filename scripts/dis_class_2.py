@@ -63,7 +63,7 @@ rll = rospy.get_param('~rll', "")
 if rll != "":
     joint_names.append("rll")
 
-rul = rospy.get_param('~rll', "")
+rul = rospy.get_param('~rul', "")
 if rul != "":
     joint_names.append("rul")
 
@@ -98,8 +98,6 @@ total_sensors = len(imu_names)
 total_entries = 0
 
 max_acc = 0.0
-
-sum = 0
 
 full_data = []
 full_labels = []
@@ -290,7 +288,8 @@ for train_index, test_index in skf:
     seq = []
 
     if batch_train == 1:
-        for s in range(0, len(train_data)):
+        s = 0
+        while s < len(train_data):
             k = 0
             seq_entry = []
             while k < 20 and s < len(train_data):
@@ -308,11 +307,11 @@ for train_index, test_index in skf:
         continue
 
     model.fit(seq, algorithm='baum-welch', verbose='True')
-    # print(model)
 
     seq = []
     if batch_test == 1:
-        for s in range(0, len(test_data)):
+        s = 0
+        while s < len(test_data):
             k = 0
             seq_entry = []
             while k < 20 and s < len(test_data):
