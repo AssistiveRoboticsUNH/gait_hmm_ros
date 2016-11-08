@@ -76,7 +76,6 @@ if len(dup_list) != len(set(dup_list)):
 
 rospack = rospkg.RosPack()
 fpath = rospack.get_path('gait_hmm_ros') + '/scripts/'
-stats = []
 rospy.loginfo("Path :"+fpath)
 rospy.loginfo("Use quat: "+str(use_quat))
 rospy.loginfo("Use gyro: "+str(use_gyro))
@@ -98,13 +97,21 @@ total_sensors = len(imu_names)
 total_entries = 0
 
 max_acc = 0.0
-
+full_step_width = []
+full_step_width_or = []
+full_step_length = []
+full_step_length_or = []
+full_ml_trunk_sway = []
+full_ml_trunk_sway_or = []
+full_ap_trunk_sway = []
+full_ap_trunk_sway_or = []
+full_foot_clearance = []
+full_foot_clearance_or = []
+full_labels = []
+full_labels_let = []
 full_data = []
 full_labels = []
-class_data = [[] for x in range(0, 2)]
-
-# names = ['new_bags/subject1_1', 'new_bags/subject1_2', 'new_bags/subject1_3', 'new_bags/subject1_4',
-#          'new_bags/subject1_5', 'new_bags/subject1_6']
+full_normlabels = []
 
 names = rospy.get_param('/filenames', "")
 norm_labels = rospy.get_param('/normlabels', "")
@@ -113,7 +120,6 @@ if names == "":
     rospy.logerr("No files given, exiting")
     exit()
 subject = rospy.get_param('/subject', "")
-normlabels = []
 #####################
 # Load enabled IMUS #
 #####################
@@ -146,8 +152,6 @@ for filename in names:
                     entry = np.concatenate((entry, x[i, 10:13]), axis=0)
                 # rospy.logwarn(len(entry))
                 data_entry.append(entry)
-                if labels_added == 0:
-                    normlabels.append(norm_labels[labelindex])
             labels_added = 1
             if sensor_data == []:
                 sensor_data = data_entry
@@ -156,7 +160,6 @@ for filename in names:
         else:
             rospy.logerr("Data file not found : "+full_name)
             exit()
-
 
     x = []
     arduino = sio.loadmat(pref + "_arduino.mat")
@@ -175,8 +178,6 @@ for filename in names:
         if use_prox == 1:
             entry = np.concatenate((entry, arduino[i, 6:7]), axis=0)
         arduino_data.append(entry)
-        if labels_added == 0:
-            normlabels.append(norm_labels[labelindex])
 
     if sensor_data!=[]:
         sensor_data = np.concatenate((sensor_data, arduino_data), axis=1)
@@ -188,8 +189,119 @@ for filename in names:
     else:
         full_data = np.concatenate((full_data, sensor_data), axis=0)
 
+    # FOOT CLEARANCE
+    foot_clearance = sio.loadmat(pref + "_foot_clearance.mat")
+    foot_clearance = foot_clearance.get("foot_clearance")
+    if full_foot_clearance == []:
+        full_foot_clearance = foot_clearance
+    else:
+        full_foot_clearance = np.hstack((full_foot_clearance, foot_clearance))
+
+    foot_clearance_or = sio.loadmat(pref + "_foot_clearance.mat")
+    foot_clearance_or = foot_clearance_or.get('foot_clearance')
+    if full_foot_clearance_or == []:
+        full_foot_clearance_or = foot_clearance_or
+    else:
+        full_foot_clearance_or = np.hstack((full_foot_clearance_or, foot_clearance_or))
+
+    # STEP WIDTH
+    step_width = sio.loadmat(pref + "_step_width.mat")
+    step_width = step_width.get('step_width')
+    if full_step_width == []:
+        full_step_width = step_width
+    else:
+        full_step_width = np.hstack((full_step_width, step_width))
+
+    step_width_or = sio.loadmat(pref + "_step_width.mat")
+    step_width_or = step_width_or.get('step_width')
+    if full_step_width_or == []:
+        full_step_width_or = step_width_or
+    else:
+        full_step_width_or = np.hstack((full_step_width_or, step_width_or))
+
+    # STEP LENGTH
+    step_length = sio.loadmat(pref + "_step_length.mat")
+    step_length = step_length.get('step_length')
+    if full_step_length == []:
+        full_step_length = step_length
+    else:
+        full_step_length = np.hstack((full_step_length, step_length))
+
+    step_length_or = sio.loadmat(pref + "_step_length.mat")
+    step_length_or = step_length_or.get('step_length')
+    if full_step_length_or == []:
+        full_step_length_or = step_length_or
+    else:
+        full_step_length_or = np.hstack((full_step_length_or, step_length_or))
+
+    # AP TRUNK SWAY
+    ap_trunk_sway = sio.loadmat(pref + "_ap_trunk_sway.mat")
+    ap_trunk_sway = ap_trunk_sway.get('ap_trunk_sway')
+    if full_ap_trunk_sway == []:
+        full_ap_trunk_sway = ap_trunk_sway
+    else:
+        full_ap_trunk_sway = np.hstack((full_ap_trunk_sway, ap_trunk_sway))
+
+    ap_trunk_sway_or = sio.loadmat(pref + "_ap_trunk_sway.mat")
+    ap_trunk_sway_or = ap_trunk_sway_or.get('ap_trunk_sway')
+    if full_ap_trunk_sway_or == []:
+        full_ap_trunk_sway_or = ap_trunk_sway_or
+    else:
+        full_ap_trunk_sway_or = np.hstack((full_ap_trunk_sway_or, ap_trunk_sway_or))
+
+    # ML TRUNK SWAY
+    ml_trunk_sway = sio.loadmat(pref + "_ml_trunk_sway.mat")
+    ml_trunk_sway = ml_trunk_sway.get('ml_trunk_sway')
+    if full_ml_trunk_sway == []:
+        full_ml_trunk_sway = ml_trunk_sway
+    else:
+        full_ml_trunk_sway = np.hstack((full_ml_trunk_sway, ml_trunk_sway))
+
+    ml_trunk_sway_or = sio.loadmat(pref + "_ml_trunk_sway.mat")
+    ml_trunk_sway_or = ml_trunk_sway_or.get('ml_trunk_sway')
+    if full_ml_trunk_sway_or == []:
+        full_ml_trunk_sway_or = ml_trunk_sway_or
+    else:
+        full_ml_trunk_sway_or = np.hstack((full_ml_trunk_sway_or, ml_trunk_sway_or))
+
+    # LABELS
+    labels = sio.loadmat(pref + "_labels_annotated.mat")
+    labels = labels.get('labels')
+    if full_labels == []:
+        full_labels = full_labels
+    else:
+        full_labels = np.hstack((full_labels, labels))
+
+    labels_let = sio.loadmat(pref + "_labels_annotated_let.mat")
+    labels_let = labels_let.get('labels')
+    if full_labels_let == []:
+        full_labels_let = labels_let
+    else:
+        full_labels_let = np.hstack((full_labels_let, labels_let))
+
+    # gait type
+    if names.index(filename) == 0:
+        full_normlabels = [0 for i in range(0, len(full_labels))]
+    elif names.index(filename) == 1:
+        normal = [1 for i in range(0, len(full_labels))]
+        full_normlabels = np.hstack((full_normlabels, normal))
+    elif names.index(filename) == 2:
+        normal = [2 for i in range(0, len(full_labels))]
+        full_normlabels = np.hstack((full_normlabels, normal))
+    elif names.index(filename) == 3:
+        normal = [3 for i in range(0, len(full_labels))]
+        full_normlabels = np.hstack((full_normlabels, normal))
+    elif names.index(filename) == 4:
+        normal = [4 for i in range(0, len(full_labels))]
+        full_normlabels = np.hstack((full_normlabels, normal))
+    else:
+        rospy.logerr("SOMETHING IS WRONG WITH THE FILENAMES, EXITING")
+        rospy.shutdown()
+        exit()
+
+
 rospy.logwarn(np.array(full_data).shape)
-rospy.logwarn(np.array(normlabels).shape)
+rospy.logwarn(np.array(full_normlabels).shape)
 rospy.logwarn(imus_used)
 rospy.logwarn(input_names)
 rospy.logwarn(names)
@@ -200,13 +312,32 @@ sensor_data = []
 normalized_data = preprocessing.normalize(full_data, norm='l1', axis=0)
 
 pickle.dump(full_data, open(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data.p", 'wb'))
-sio.savemat(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data.mat", mdict={"full_data": full_data})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data.mat", mdict={"data": full_data})
 
 pickle.dump(normalized_data, open(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data_normalized.p", 'wb'))
 sio.savemat(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data_normalized.mat",
-            mdict={"full_data_normalized": normalized_data})
+            mdict={"data": normalized_data})
 
-pickle.dump(normlabels, open(fpath+"/new_bags/datasets/"+subject+"_normal_labels.p", 'wb'))
-sio.savemat(fpath+"/new_bags/datasets/"+subject+"_normal_labels.mat", mdict={"norm_labels": normlabels})
+pickle.dump(full_normlabels, open(fpath+"/new_bags/datasets/"+subject+"_normal_labels.p", 'wb'))
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_normal_labels.mat", mdict={"norm_labels": full_normlabels})
 
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_foot_clearance.mat", mdict={"foot_clearance": full_foot_clearance})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_foot_clearance_or.mat",
+            mdict={"foot_clearance": full_foot_clearance_or})
 
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_step_width.mat", mdict={"step_width": full_step_width})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_step_width_or.mat", mdict={"step_width": full_step_width_or})
+
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_step_length.mat", mdict={"step_length": full_step_length})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_step_length_or.mat", mdict={"step_length": full_step_length_or})
+
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_ml_trunk_sway.mat", mdict={"ml_trunk_sway": full_ml_trunk_sway})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_ml_trunk_sway_or.mat", mdict={"ml_trunk_sway": full_ml_trunk_sway_or})
+
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_ap_trunk_sway.mat", mdict={"ap_trunk_sway": full_ap_trunk_sway})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_ap_trunk_sway_or.mat", mdict={"ap_trunk_sway": full_ap_trunk_sway_or})
+
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_labels.mat", mdict={"labels": full_labels})
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_labels_let.mat", mdict={"labels": full_labels_let})
+
+sio.savemat(fpath+"/new_bags/datasets/"+subject+"_norm_labels.mat", mdict={"norm_labels": norm_labels})
