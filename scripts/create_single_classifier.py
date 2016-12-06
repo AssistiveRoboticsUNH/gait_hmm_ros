@@ -3,8 +3,9 @@ import rospy
 import rospkg
 import pickle
 import numpy as np
-import matlab.engine
+# import matlab.engine
 from sklearn.cross_validation import StratifiedKFold
+# from sklearn.model_selection import StratifiedKFold
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
@@ -16,7 +17,7 @@ class SingleClassifier:
     def prepare_data(self):
         self.full_data = []
         self.full_labels = []
-        class_data = [[] for x in range(0, 2)]
+        self.class_data = [[] for x in range(0, 2)]
         rospy.logwarn("Normalized data : " + str(self.normalized))
         rospy.logwarn("Folds : " + str(self.folds))
         rospy.logwarn("Datafile : " + self.datafile)
@@ -24,21 +25,39 @@ class SingleClassifier:
         rospy.logwarn("Batch Testing : " + str(self.batch_test))
 
         if normalized == 0:
+            rospy.logwarn(self.datafile + "full_data.mat")
             self.full_data = scio.loadmat(self.datafile + "full_data.mat")
-            self.full_data = self.full_data.get("full_data")
+            self.full_data = self.full_data.get("data")
         else:
+            rospy.logwarn(self.datafile + "full_data_normalized.mat")
             self.full_data = scio.loadmat(self.datafile + "full_data_normalized.mat")
-            self.full_data = self.full_data.get("full_data_normalized")
+            self.full_data = self.full_data.get("data")
 
-        self.full_labels = scio.loadmat(self.datafile + "labels_annotated.mat")
+        if (self.full_data is None) or (self.full_data == []):
+            rospy.logerr("No data found, exiting")
+            rospy.shutdown()
+            exit()
+
+        # self.full_labels = scio.loadmat(self.datafile + "labels_annotated.mat")
+        self.full_labels = scio.loadmat(self.labelfile)
+        # print self.labelfile
+        # print self.full_labels
         self.full_labels = self.full_labels.get("labels")
+        # print self.full_labels
 
+        # print self.full_data
+        self.full_labels = self.full_labels[0]
+        print self.full_labels
         for i in range(0, len(self.full_data)):
+            # print self.full_labels[i]
+            # print self.full_data[i]
             if self.full_labels[i] == 0:
-                class_data[0].append(self.full_data[i])
+                self.class_data[0].append(self.full_data[i])
             else:
-                class_data[1].append(self.full_data[i])
+                self.class_data[1].append(self.full_data[i])
 
+        print np.array(self.class_data[0]).shape
+        print np.array(self.class_data[1]).shape
         self.t = np.zeros((2, 2))
         sum_ = 0
         prev = -1
@@ -50,9 +69,9 @@ class SingleClassifier:
             prev = self.full_labels[i]
             sum_ += 1.0
 
-        self.t = self.t / sum
+        self.t = self.t / sum_
+        print("Transition probabilities")
         print self.t
-        self.class_data = [[] for x_ in range(0, 2)]
 
     def build_single_classifier(self):
         stats = []
@@ -61,64 +80,132 @@ class SingleClassifier:
         state_names = ['swing', 'stance']
 
         skf = StratifiedKFold(self.full_labels, n_folds=self.folds)
+        # skf = StratifiedKFold(self.full_labels, n_folds=2)
 
-        tp = 0.0
-        tn = 0.0
-        fp = 0.0
-        fn = 0.0
+        tp_total = 0.0
+        tn_total = 0.0
+        fp_total = 0.0
+        fn_total = 0.0
 
         tests = 0
+
+        # print("Initiating HMM")
+
+
+        # rospy.logwarn("Baked model")
+        # print("Initiated HMM")
+
+        lel = -1
         for train_index, test_index in skf:
+            if lel > 0:
+                lel -= 1
+                continue
 
-            classifier = HMM(name="Gait")
             hmm_states = []
-
+            distros = []
+            swings = 0
+            stances = 0
             for i in range(0, 2):
+                # print("Creating distribution for class " + str(i))
                 # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
+                # print self.class_data[i]
                 dis = MGD.from_samples(self.class_data[i])
+                # print("Created distribution for class " + str(i) + " with mean : "
+                #       + str(dis.mu)+", and cov :")
+                # print(dis.cov)
                 st = State(dis, name=state_names[i])
                 distros.append(dis)
+                # rospy.logwarn("Appended distribution for class " + str(i))
                 hmm_states.append(st)
+                # rospy.logwarn("Appended state for class " + str(i))
 
-            classifier.add_states(hmm_states)
-            classifier.add_transition(classifier.start, hmm_states[0], 0.5)
-            classifier.add_transition(classifier.start, hmm_states[1], 0.5)
+            model = HMM()
+            model.add_states(hmm_states)
+            model.add_transition(model.start, hmm_states[0], 0.5)
+            model.add_transition(model.start, hmm_states[1], 0.5)
+            model.add_transition(hmm_states[1], model.end, 0.00000000001)
+            model.add_transition(hmm_states[0], model.end, 0.00000000001)
 
+            # rospy.logwarn("Created States")
             for i in range(0, 2):
                 for j in range(0, 2):
-                    classifier.add_transition(hmm_states[i], hmm_states[j], self.t[i][j])
+                    model.add_transition(hmm_states[i], hmm_states[j], self.t[i][j])
+            # rospy.logwarn("Added transitions")
+            model.bake()
 
-            classifier.bake()
-            rospy.logwarn("Baked model")
-            print("TRAIN:", train_index, "TEST:", test_index)
+            tp = 0.0
+            tn = 0.0
+            fp = 0.0
+            fn = 0.0
+
+            seq = []
+            # for i in range(0, 2):
+            #     print("Creating distribution for class "+str(i))
+            #     # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
+            #     # print self.class_data[i]
+            #     dis = MGD.from_samples(self.class_data[i])
+            #     # print("Created distribution for class " + str(i) + " with mean : "
+            #     #       + str(dis.mu)+", and cov :")
+            #     # print(dis.cov)
+            #     st = State(dis, name=state_names[i])
+            #     distros.append(dis)
+            #     rospy.logwarn("Appended distribution for class " + str(i))
+            #     hmm_states.append(st)
+            #     rospy.logwarn("Appended state for class " + str(i))
+
+            # print model
+
             train_data = self.full_data[train_index]
             train_class = self.full_labels[train_index]
             test_data = self.full_data[test_index]
             test_class = self.full_labels[test_index]
-            seq = []
+            # print(np.isfinite(train_data).all())
+            # print(np.isfinite(test_data).all())
+            # print(np.isnan(train_data.any()))
+            # print(np.isinf(train_data.any()))
+            # print(np.isnan(test_data.any()))
+            # print(np.isinf(test_data.any()))
 
-            if batch_train == 1:
-                for s in range(0, len(test_data)):
-                    k = 0
-                    seq_entry = []
-                    while k < 20 and s < len(train_data):
-                        seq_entry.append(train_data[s])
-                        k += 1
-                        s += 1
-                    seq.append(seq_entry)
-            else:
-                seq = train_data
+            if (not np.isfinite(train_data.any())) or (not np.isfinite(test_data.any())) \
+                    or (not np.isfinite(train_class.any())) or (not np.isfinite(test_data.any())):
+                rospy.logerr("NaN or Inf Detected")
+                exit()
 
-            # Check for empty seq
-            if seq == []:
-                rospy.logerr("Empty fitting sequence")
-                continue
+            try:
+                rospy.logwarn("Training model, fold #"+str(tests))
+                if batch_train == 1:
+                    s = 0
+                    # for s in range(0, len(train_data)):
+                    while s < len(train_data):
+                        k = 0
+                        seq_entry = []
+                        while k < 20 and s < len(train_data):
+                            seq_entry.append(train_data[s])
+                            k += 1
+                            s += 1
+                        if not np.isfinite(np.array(seq)).all():
+                            rospy.logerr("Empty fitting sequence")
+                            exit()
+                        seq.append(seq_entry)
+                else:
+                    seq = np.array(train_data)
 
-            classifier.fit(seq, algorithm='baum-welch', verbose='True')
+                # Check for empty seq
+                if seq == []:# or (not np.isfinite(np.array(seq)).all()):
+                    rospy.logerr("Empty fitting sequence")
+                    exit()
+                # print np.array(seq).shape
+                model.fit(seq, algorithm='baum-welch', verbose='False')
+                # rospy.logwarn("Finished Training")
+            except ValueError:
+                rospy.logwarn("Something went wrong, exiting")
+                rospy.shutdown()
+                exit()
 
             seq = []
             if self.batch_test == 1:
-                for s in range(0, len(test_data)):
+                s = 0
+                while s < len(test_data):
                     k = 0
                     seq_entry = []
                     while k < 20 and s < len(test_data):
@@ -127,17 +214,18 @@ class SingleClassifier:
                         s += 1
                     seq.append(seq_entry)
             else:
-                seq = test_data
+                seq = np.array(test_data)
 
             if seq == [] or test_data == []:
                 rospy.logerr("Empty testing sequence")
                 continue
 
-            rospy.logwarn("Start Viterbi")
-            log, path = classifier.viterbi(seq)
-            rospy.logwarn("Viterbi Done")
+            # rospy.logwarn("Start Viterbi")
+            # print len(test_data)
+            log, path = model.viterbi(test_data)
+            # rospy.logwarn("Viterbi Done")
             # rospy.logwarn(len(path))
-            if (len(path) - 1) != len(test_data):
+            if (len(path) - 2) != len(test_data):
                 rospy.logerr(len(path))
                 rospy.logerr(path[0][1].name)
                 rospy.logerr(path[len(path) - 1][1].name)
@@ -145,15 +233,19 @@ class SingleClassifier:
                 exit()
 
             tests += 1
-            sum_ = 0.0
-            for i in range(0, len(path) - 1):
+            # print len(path)
+            # print len(test_data)
+            for i in range(0, len(path) - 2):
                 if path[i + 1][1].name != 'Gait-start' and path[i + 1][1].name != 'Gait-end':
                     if path[i + 1][1].name == 'swing':  # prediction is 0
+                        swings += 1
                         if test_class[i] == 0:  # class is 0
                             tn += 1.0
                         elif test_class[i] == 1:
                             fn += 1.0  # class is 1
+
                     elif path[i + 1][1].name == 'stance':  # prediction is 1
+                        stances += 1
                         if test_class[i] == 1:  # class is 1
                             tp += 1.0
                         elif test_class[i] == 0:  # class is 0
@@ -161,46 +253,78 @@ class SingleClassifier:
                             # print str(sum_) + "/" + str(len(test_data))
                             # print sum_ / float(str(len(test_data)))
                             # print '------------------------------------'
+            # print(float(tn+tp)/float(fp+fn))
+            print swings
+            print stances
 
-        tp /= tests
-        tn /= tests
-        fp /= tests
-        fn /= tests
-        rospy.logwarn("TP :" + str(tp))
-        rospy.logwarn("TN :" + str(tn))
-        rospy.logwarn("FP :" + str(fp))
-        rospy.logwarn("FN :" + str(fn))
-        rospy.logwarn("Tests :" + str(tests))
-        if (tp + fn) != 0.0:
-            sensitivity = tp / (tp + fn)
+            if (tp + fn) != 0.0:
+                rospy.logwarn("Sensitivity : " + str(tp / (tp + fn)))
+                # sensitivity = tp / (tp + fn)
+            else:
+                rospy.logwarn("Sensitivity : 0.0")
+                # sensitivity = 0.0
+            if (tn + fp) != 0.0:
+                rospy.logwarn("Specificity : " + str(tn / (tn + fp)))
+                # specificity = tn_total / (tn_total + fp_total)
+            else:
+                rospy.logwarn("Specificity : 0.0")
+                # specificity = 0.0
+            if (tn + tp + fn + fp) != 0.0:
+                rospy.logwarn("Accuracy : " + str((tn + tp) / (tn + tp + fn + fp)))
+                # accuracy = (tn + tp) / (tn + tp + fn + fp)
+            else:
+                rospy.logwarn("Accuracy : 0.0")
+                # accuracy = 0.0
+
+            tn_total += tn
+            tp_total += tp
+            fn_total += fn
+            fp_total += fp
+            # exit()
+
+        tp_total /= tests
+        tn_total /= tests
+        fp_total /= tests
+        fn_total /= tests
+        rospy.logerr("TP :" + str(tp_total))
+        rospy.logerr("TN :" + str(tn_total))
+        rospy.logerr("FP :" + str(fp_total))
+        rospy.logerr("FN :" + str(fn_total))
+        rospy.logerr("Tests :" + str(tests))
+        if (tp_total + fn_total) != 0.0:
+            sensitivity = tp_total / (tp_total + fn_total)
         else:
             sensitivity = 0.0
-        if (tn + fp) != 0.0:
-            specificity = tn / (tn + fp)
+        if (tn_total + fp_total) != 0.0:
+            specificity = tn_total / (tn_total + fp_total)
         else:
             specificity = 0.0
-        if (tn + tp + fn + fp) != 0.0:
-            accuracy = (tn + tp) / (tn + tp + fn + fp)
+        if (tn_total + tp_total + fn_total + fp_total) != 0.0:
+            accuracy = (tn_total + tp_total) / (tn_total + tp_total + fn_total + fp_total)
         else:
             accuracy = 0.0
 
         rospy.logwarn("----------------------------------------------------------")
-        rospy.logwarn(accuracy)
-        rospy.logwarn(sensitivity)
-        rospy.logwarn(specificity)
-        stats = [tn * tests, fn * tests, fp * tests, fn * tests, tests, accuracy, sensitivity, specificity]
-        pickle.dump(classifier, open(datafile + "classifier.p", 'wb'))
+        rospy.logerr("Total accuracy: "+str(accuracy))
+        rospy.logerr("Total sensitivity: "+str(sensitivity))
+        rospy.logerr("Total specificity: "+str(specificity))
+        stats = [tn_total * tests, fn_total * tests, fp_total * tests, fn_total * tests, tests,
+                 accuracy, sensitivity, specificity]
+        pickle.dump(model, open(datafile + "classifier.p", 'wb'))
         pickle.dump(stats, open(datafile + "stats.p", 'wb'))
+        pickle.dump(distros, open(datafile + "distros.p", 'wb'))
         scio.savemat(datafile + "stats.mat", {'stats': stats})
+        rospy.logwarn("-------------------DONE-------------------------")
 
-    def __init__(self, normalized=0, folds=10, datafile="", prefix="",
+    def __init__(self, _normalized=0, _folds=10, _datafile="", _labelfile = "", _prefix="",
                  bte=0, btr=0, prep_data=prepare_data, build_class=build_single_classifier):
         # use normalized or original data
-        self.normalized = normalized
+        self.normalized = _normalized
         # folds for cross validation
-        self.folds = folds
-        self.datafile = datafile
-        self.prefix = prefix
+        self.folds = _folds
+        self.datafile = _datafile
+        self.labelfile = _labelfile
+        self.prefix = _prefix
         # batch testing or not
         self.batch_test = bte
         # batch training or not
@@ -213,7 +337,7 @@ class SingleClassifier:
         self.t = []
         self.class_data = []
         prep_data(self)
-        self.build_class()
+        build_class(self)
 
 
 if __name__ == "__main__":
@@ -223,7 +347,6 @@ if __name__ == "__main__":
     folds = rospy.get_param("~folds", 10)
     datafile = rospy.get_param("~datafile", "")
     prefix = rospy.get_param("~prefix", "")
-
     if datafile == "":
         rospy.logerr("No datafile found, exiting")
         exit()
@@ -231,6 +354,7 @@ if __name__ == "__main__":
         rospy.logerr("No prefix found, exiting")
         exit()
 
+    labelfile = rospack.get_path('gait_hmm_ros') + '/scripts/new_bags/datasets/' + prefix + '_labels.mat'
     fpath = rospack.get_path('gait_hmm_ros') + '/scripts/new_bags/datasets/' + prefix + '_'
     datafile = fpath + datafile
 
@@ -248,4 +372,5 @@ if __name__ == "__main__":
     else:
         batch_train = 0
 
-    x = SingleClassifier(normalized, folds, datafile, prefix, batch_test, batch_train)
+    x = SingleClassifier(normalized, folds, datafile, labelfile, prefix, batch_test, batch_train)
+

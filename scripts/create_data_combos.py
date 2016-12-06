@@ -3,6 +3,7 @@ import rospy
 import rospkg
 import pickle
 import imu_callbacks as iparam
+import numpy as np
 from pomegranate import*
 import scipy.io as sio
 from sklearn import preprocessing
@@ -123,15 +124,16 @@ subject = rospy.get_param('/subject', "")
 #####################
 # Load enabled IMUS #
 #####################
-labels_added = 0
+print names
 for filename in names:
-    labels_added = 0
+    print filename
     labelindex = names.index(filename)
     sensor_data = []
     pref = fpath + filename
+    print joint_names
     for name in joint_names:
         full_name = pref + "_" + name + ".mat"
-        # rospy.logwarn(full_name)
+        rospy.logwarn(full_name)
         if os.path.isfile(full_name):
             if ("_" + name + "_") not in imus_used:
                 imus_used += (name + "_")
@@ -152,7 +154,6 @@ for filename in names:
                     entry = np.concatenate((entry, x[i, 10:13]), axis=0)
                 # rospy.logwarn(len(entry))
                 data_entry.append(entry)
-            labels_added = 1
             if sensor_data == []:
                 sensor_data = data_entry
             else:
@@ -160,6 +161,7 @@ for filename in names:
         else:
             rospy.logerr("Data file not found : "+full_name)
             exit()
+
 
     x = []
     arduino = sio.loadmat(pref + "_arduino.mat")
@@ -191,14 +193,16 @@ for filename in names:
 
     # FOOT CLEARANCE
     foot_clearance = sio.loadmat(pref + "_foot_clearance.mat")
-    foot_clearance = foot_clearance.get("foot_clearance")
+    foot_clearance = foot_clearance.get("foot_clearance")[0]
+    # print foot_clearance
     if full_foot_clearance == []:
         full_foot_clearance = foot_clearance
     else:
         full_foot_clearance = np.hstack((full_foot_clearance, foot_clearance))
 
-    foot_clearance_or = sio.loadmat(pref + "_foot_clearance.mat")
-    foot_clearance_or = foot_clearance_or.get('foot_clearance')
+    foot_clearance_or = sio.loadmat(pref + "_foot_clearance_or.mat")
+    foot_clearance_or = foot_clearance_or.get('foot_clearance')[0]
+    # print foot_clearance_or
     if full_foot_clearance_or == []:
         full_foot_clearance_or = foot_clearance_or
     else:
@@ -206,14 +210,16 @@ for filename in names:
 
     # STEP WIDTH
     step_width = sio.loadmat(pref + "_step_width.mat")
-    step_width = step_width.get('step_width')
+    step_width = step_width.get('step_width')[0]
+    # print step_width
     if full_step_width == []:
         full_step_width = step_width
     else:
         full_step_width = np.hstack((full_step_width, step_width))
 
-    step_width_or = sio.loadmat(pref + "_step_width.mat")
-    step_width_or = step_width_or.get('step_width')
+    step_width_or = sio.loadmat(pref + "_step_width_or.mat")
+    step_width_or = step_width_or.get('step_width')[0]
+    # print step_width_or
     if full_step_width_or == []:
         full_step_width_or = step_width_or
     else:
@@ -221,14 +227,16 @@ for filename in names:
 
     # STEP LENGTH
     step_length = sio.loadmat(pref + "_step_length.mat")
-    step_length = step_length.get('step_length')
+    step_length = step_length.get('step_length')[0]
+    # print step_length
     if full_step_length == []:
         full_step_length = step_length
     else:
         full_step_length = np.hstack((full_step_length, step_length))
 
-    step_length_or = sio.loadmat(pref + "_step_length.mat")
-    step_length_or = step_length_or.get('step_length')
+    step_length_or = sio.loadmat(pref + "_step_length_or.mat")
+    step_length_or = step_length_or.get('step_length')[0]
+    # print step_length_or
     if full_step_length_or == []:
         full_step_length_or = step_length_or
     else:
@@ -236,14 +244,16 @@ for filename in names:
 
     # AP TRUNK SWAY
     ap_trunk_sway = sio.loadmat(pref + "_ap_trunk_sway.mat")
-    ap_trunk_sway = ap_trunk_sway.get('ap_trunk_sway')
+    ap_trunk_sway = ap_trunk_sway.get('ap_trunk_sway')[0]
+    # print ap_trunk_sway
     if full_ap_trunk_sway == []:
         full_ap_trunk_sway = ap_trunk_sway
     else:
         full_ap_trunk_sway = np.hstack((full_ap_trunk_sway, ap_trunk_sway))
 
-    ap_trunk_sway_or = sio.loadmat(pref + "_ap_trunk_sway.mat")
-    ap_trunk_sway_or = ap_trunk_sway_or.get('ap_trunk_sway')
+    ap_trunk_sway_or = sio.loadmat(pref + "_ap_trunk_sway_or.mat")
+    ap_trunk_sway_or = ap_trunk_sway_or.get('ap_trunk_sway')[0]
+    # print ap_trunk_sway_or
     if full_ap_trunk_sway_or == []:
         full_ap_trunk_sway_or = ap_trunk_sway_or
     else:
@@ -251,14 +261,16 @@ for filename in names:
 
     # ML TRUNK SWAY
     ml_trunk_sway = sio.loadmat(pref + "_ml_trunk_sway.mat")
-    ml_trunk_sway = ml_trunk_sway.get('ml_trunk_sway')
+    ml_trunk_sway = ml_trunk_sway.get('ml_trunk_sway')[0]
+    # print ml_trunk_sway_or
     if full_ml_trunk_sway == []:
         full_ml_trunk_sway = ml_trunk_sway
     else:
         full_ml_trunk_sway = np.hstack((full_ml_trunk_sway, ml_trunk_sway))
 
-    ml_trunk_sway_or = sio.loadmat(pref + "_ml_trunk_sway.mat")
-    ml_trunk_sway_or = ml_trunk_sway_or.get('ml_trunk_sway')
+    ml_trunk_sway_or = sio.loadmat(pref + "_ml_trunk_sway_or.mat")
+    ml_trunk_sway_or = ml_trunk_sway_or.get('ml_trunk_sway')[0]
+    # print ml_trunk_sway_or
     if full_ml_trunk_sway_or == []:
         full_ml_trunk_sway_or = ml_trunk_sway_or
     else:
@@ -266,42 +278,60 @@ for filename in names:
 
     # LABELS
     labels = sio.loadmat(pref + "_labels_annotated.mat")
-    labels = labels.get('labels')
+    labels = labels.get('labels')[0]
+    # print labels
     if full_labels == []:
-        full_labels = full_labels
+        full_labels = labels
     else:
         full_labels = np.hstack((full_labels, labels))
 
     labels_let = sio.loadmat(pref + "_labels_annotated_let.mat")
     labels_let = labels_let.get('labels')
+    # print labels_let
     if full_labels_let == []:
         full_labels_let = labels_let
     else:
         full_labels_let = np.hstack((full_labels_let, labels_let))
-
     # gait type
     if names.index(filename) == 0:
-        full_normlabels = [0 for i in range(0, len(full_labels))]
+        full_normlabels = [0 for i in range(0, len(arduino))]
+        continue
     elif names.index(filename) == 1:
-        normal = [1 for i in range(0, len(full_labels))]
+        normal = [1 for i in range(0, len(arduino))]
         full_normlabels = np.hstack((full_normlabels, normal))
+        continue
     elif names.index(filename) == 2:
-        normal = [2 for i in range(0, len(full_labels))]
+        normal = [2 for i in range(0, len(arduino))]
         full_normlabels = np.hstack((full_normlabels, normal))
+        continue
     elif names.index(filename) == 3:
-        normal = [3 for i in range(0, len(full_labels))]
+        normal = [3 for i in range(0, len(arduino))]
         full_normlabels = np.hstack((full_normlabels, normal))
+        continue
     elif names.index(filename) == 4:
-        normal = [4 for i in range(0, len(full_labels))]
+        normal = [4 for i in range(0, len(arduino))]
         full_normlabels = np.hstack((full_normlabels, normal))
+        continue
     else:
         rospy.logerr("SOMETHING IS WRONG WITH THE FILENAMES, EXITING")
         rospy.shutdown()
         exit()
 
-
+print full_normlabels
 rospy.logwarn(np.array(full_data).shape)
 rospy.logwarn(np.array(full_normlabels).shape)
+rospy.logwarn(np.array(full_labels).shape)
+rospy.logwarn(np.array(full_labels_let).shape)
+rospy.logwarn(np.array(full_foot_clearance).shape)
+rospy.logwarn(np.array(full_step_width).shape)
+rospy.logwarn(np.array(full_step_length).shape)
+rospy.logwarn(np.array(full_ap_trunk_sway).shape)
+rospy.logwarn(np.array(full_ml_trunk_sway).shape)
+rospy.logwarn(np.array(full_foot_clearance_or).shape)
+rospy.logwarn(np.array(full_step_width_or).shape)
+rospy.logwarn(np.array(full_step_length_or).shape)
+rospy.logwarn(np.array(full_ap_trunk_sway_or).shape)
+rospy.logwarn(np.array(full_ml_trunk_sway_or).shape)
 rospy.logwarn(imus_used)
 rospy.logwarn(input_names)
 rospy.logwarn(names)
@@ -309,8 +339,16 @@ rospy.logwarn(names)
 labels = []
 sensor_data = []
 
-normalized_data = preprocessing.normalize(full_data, norm='l1', axis=0)
+# normalized_data = preprocessing.normalize(full_data, norm='l1', axis=0)
+# normalized_data = (full_data - full_data.min(0))/full_data.ptp(0)
+# normalized_data = full_data/full_data.max(axis=0)
 
+mins = np.min(full_data, axis=0)
+maxs = np.max(full_data, axis=0)
+rng = maxs - mins
+normalized_data = 1.0 - (((1.0 - 0.0) * (maxs - full_data)) / rng)
+
+print(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data.mat")
 pickle.dump(full_data, open(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data.p", 'wb'))
 sio.savemat(fpath+"/new_bags/datasets/"+subject+"_"+imus_used+"full_data.mat", mdict={"data": full_data})
 
