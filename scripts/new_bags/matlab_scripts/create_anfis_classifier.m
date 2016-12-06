@@ -59,7 +59,8 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
         assignin('base', 'chkCl', chkCl);
         
         dispOpt = ones(1,4);
-        trnOpt = NaN
+        trnOpt = {500, 0.01, 0.01, 0.9, 1.1}
+        %trnOpt = NaN
         
         tr_in = full_data(trIdx,:);
         tr_cl = full_labels(trIdx,:);
@@ -85,16 +86,16 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
         teIdx = CVO.test;
         assignin('base', 'teIdx', teIdx);
         
-        %chkIn = full_data(CVO.training(2),:);
-        chkIn = 0;
-        %chkCl = full_labels(CVO.test(2),:);
-        chkCl = 0;
+        CV02 = 0;
+        val_in = 0;
+        val_cl = 0;
+        valIdx = 0;
+        testIdxFin = 0;
         
-        assignin('base', 'chkIn', chkIn);
-        assignin('base', 'chkCl', chkCl);
-        
-        dispOpt = ones(1,4);
-        trnOpt = NaN
+        %dispOpt = ones(1,4);
+        dispOpt = zeros(1,4);
+        trnOpt = [100, 0.01, 0.01, 0.9, 1.1]
+        %trnOpt = NaN
         
         tr_in = full_data(trIdx,:);
         tr_cl = full_labels(trIdx,:);
@@ -104,6 +105,21 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
         
         te_in = full_data(teIdx,:);
         te_cl = full_labels(teIdx,:);
+        %%%%%%%%%%%SEPARATE INTO VALIDATION AND TEST%%%%%%%%%%
+        CVO2 = cvpartition(te_cl, 'HoldOut', 0.5);
+        
+        valIdx = CVO2.training;
+        testIdxFin = CVO2.test;
+        
+        val_in = te_in(valIdx, :);
+        val_cl = te_cl(valIdx, :);
+        
+        te_in = te_in(testIdxFin, :);
+        te_cl = te_cl(testIdxFin, :);
+        
+        assignin('base', 'val_in', val_in);
+        assignin('base', 'val_cl', val_cl);
+        %%%%%%%%%%%%% ENDS HERE %%%%%%%%%%%%%%%%%%%%%%
         
         assignin('base', 'te_in', te_in);
         assignin('base', 'te_cl', te_cl);
@@ -131,11 +147,20 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     assignin('base', 'gf2', gf2);
 
     disp('Anfis start ')
-    an1 = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt);
-    size(chkIn)
+    error = 0;
+    stepsize = 0;
+    chkFis = 0;
+    chkErr = 0;
+    % an1 = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt);
+    [an1, error, stepsize, chkFis, chkErr] = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt, [val_in val_cl]);
     size(tr_in)
+    size(val_in)
+    size(te_in)
     assignin('base', 'an1', an1);
-    
+    assignin('base', 'error', error);
+    assignin('base', 'stepsize', stepsize);
+    assignin('base', 'chkFis', chkFis);
+    assignin('base', 'chkErr', chkErr);
     disp('evalfis start ')
     output = evalfis(te_in, an1);
     assignin('base', 'output', output);
@@ -146,7 +171,8 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     output_norm=((repmat(max_a,row,1)-output)./repmat(max_a-min_a,row,1));
     assignin('base', 'output_norm', output_norm);
     name = [workspace_file(1:end-4), '_workspace.mat']
-    save(name, 'an1', 'binary_labels', 'chkCl', 'chkIn', 'CVO', 'full_data',...
+    save(name, 'an1', 'error', 'stepsize', 'chkFis', 'chkErr',...
+    'binary_labels', 'val_cl', 'val_in', 'CVO', 'CVO2','full_data',...
     'full_labels', 'gf2', 'normal_labels', 'output', 'output_norm', ...
     'radii', 'te_cl', 'te_in', 'teIdx', 'tr_cl', 'tr_in', 'trIdx', 'xBounds', 'k')
 end

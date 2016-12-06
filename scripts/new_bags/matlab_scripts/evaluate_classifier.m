@@ -1,7 +1,7 @@
 function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
 %EVALUATE_CLASSIFIER Summary of this function goes here
 %   Detailed explanation goes here
-    wsName = [path,ws]
+    wsName = [path,ws];
     name = [path,'evaluated_',ws];
     workspace = load(wsName);
     assignin('base', 'k', k);
@@ -136,7 +136,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
                 w = 1;
                 %kekers = 0;
                 %while (w <= window) && (j <= x);
-                while (w <= 10) && (j <= x);
+                while (w <= 1) && (j <= x);
                     indexes = [indexes j];
                 %    kekers = kekers + output_test(j);
                     w = w+1;
@@ -239,12 +239,14 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
             assignin('base', 'ws', ws);
         end
     else
-        trIdx = workspace.CVO.training;
-        teIdx = workspace.CVO.test;
+        trIdx = workspace.CVO2.training;
+        teIdx = workspace.CVO2.test;
         tr_in = workspace.full_data(trIdx,:);
         tr_cl = workspace.full_labels(trIdx,:);
-        te_in = workspace.full_data(teIdx,:);
-        te_cl = workspace.full_labels(teIdx,:);
+        te_in = workspace.te_in;
+        %te_in = workspace.full_data(teIdx,:);
+        te_cl = workspace.te_cl;
+        %te_cl = workspace.full_labels(teIdx,:);
         
         [output_test,IRR,ORR,ARR] = evalfis(te_in,  workspace.an1);
         
@@ -344,37 +346,11 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
             else
                 final_array(indexes) = 3;
             end
-            
-            %m = mean(output_test(indexes));
-            %if(m<0.5)
-            %    final_array(indexes) = 0;
-            %elseif(m<1.5)
-            %    final_array(indexes) = 1;
-            %elseif(m<2.5)
-            %    final_array(indexes) = 2;
-            %else
-            %    final_array(indexes) = 3;
-            %end
-            
-            
-            %means(indexes) = m;
-            %if m >= 0.6;
-            %if kekers >= 0.7;
-            %if(output_test(indexes(1))<output_test(indexes(end)))
-            %    final_array(indexes) = 1;
-            %else
-            %    final_array(indexes) = 0;
-            %end
-            %if(output_test_norm(j)<0.5)
-            %    final_array(j) = 1;
-            %elseif(output_test_norm(j)<0.5)
-            %    final_array(j) = 0;
-            %end
         end
         
-        ret = (sum(te_cl==final_array))/length(te_cl)
+        ret = (sum(te_cl==final_array))/length(te_cl);
         if (ret > ret_max)
-            ret_max = ret
+            ret_max = ret;
         end
         
         output_test_final = output_test_final';
@@ -394,9 +370,9 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
             end
         end
         
-        arduino_components = fsr + ir + prox
-        imu_entries
-        input_size = arduino_components + imu_entries
+        arduino_components = fsr + ir + prox;
+        imu_entries;
+        input_size = arduino_components + imu_entries;
         
         correct_guesses = correct_guesses';
         correct_zeroes = correct_zeroes';
@@ -435,7 +411,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
     save(name, 'workspace', 'name', 'thres', 'window', 'k', 'total_acc',...
     'ones_acc', 'zeroes_acc', 'output_test', 'output_test_norm',...
     'output_test_final','output_final',...
-    'final_array', 'te_cl', 'IRR','ORR', 'ARR','totalLol',...
+    'final_array','te_in', 'te_cl', 'IRR','ORR', 'ARR','totalLol',...
     'IRR_', 'ORR_', 'ARR_',...
     'arduino_components', 'imu_entries', 'input_size');
     
