@@ -10,7 +10,14 @@ Included are the data for 3 subjects, with 5 intervals per subject where:
 - Interval 5: all of the previous combined in a random manner
 
 (Code not documented is deprecated/not used)
-## ROSbag to useable form saving data, normalized data and timestamps in .matfiles:
+
+#Nodes
+##Record data
+~~~~
+./launch/record.sh \<output_bagfile_name\> \<duration_in_minutes\>
+~~~~
+
+## Convert rosbags to useable form saving data, normalized data and timestamps in .matfiles:
 Run:
 
 For Single subject:
