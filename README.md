@@ -9,6 +9,7 @@ Included are the data for 3 subjects, with 5 intervals per subject where:
 - Interval 4: excessive trunk sway
 - Interval 5: all of the previous combined in a random manner
 
+(Code not documented is deprecated/not used)
 ## ROSbag to useable form saving data, normalized data and timestamps in .matfiles:
 Run:
 
