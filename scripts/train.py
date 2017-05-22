@@ -19,7 +19,7 @@ from sklearn.mixture import VBGMM
 from collections import namedtuple
 from threespace_ros.msg import dataVec
 from matplotlib import pyplot as plt
-from entry_data import DataEntry, fullEntry
+from entry_data import DataEntry, FullEntry
 from hmmlearn import hmm
 
 rhvec = np.zeros(13)
@@ -85,14 +85,14 @@ data2 = pickle.load(open(prefix+"_upper_leg_annotated.p","rb"))
 data3 = pickle.load(open(prefix+"_lower_leg_annotated.p","rb"))
 
 #print data
-ho_data = ed.classData(label = 0)
-ff_data = ed.classData(label = 1)
-hs_data = ed.classData(label = 2)
-sw_data = ed.classData(label = 3)
-invalid_data = ed.classData(label = -1)
-full_data = fullEntry()
-full_data2 = fullEntry()
-full_data3 = fullEntry()
+ho_data = ed.ClassData(label = 0)
+ff_data = ed.ClassData(label = 1)
+hs_data = ed.ClassData(label = 2)
+sw_data = ed.ClassData(label = 3)
+invalid_data = ed.ClassData(label = -1)
+full_data = FullEntry()
+full_data2 = FullEntry()
+full_data3 = FullEntry()
 t = np.zeros((4,4))
 prev = -1
 sum = 0 

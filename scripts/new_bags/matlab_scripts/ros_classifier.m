@@ -1,1 +1,0 @@
-rosinit('localhost')

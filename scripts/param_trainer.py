@@ -18,7 +18,7 @@ from sklearn.mixture import GMM
 from sklearn.mixture import VBGMM
 from sklearn.preprocessing import normalize
 from threespace_ros.msg import dataVec
-from entry_data import DataEntry, fullEntry
+from entry_data import DataEntry, FullEntry
 from hmmlearn import hmm
 
 rul_vec = np.zeros(13)
@@ -116,13 +116,13 @@ use_measurements[3] = rospy.get_param('~use_comp', 0)
 data = pickle.load(open(rospack.get_path('gait_hmm_ros') + '/scripts/' + prefix + "_foot_annotated.p", "rb"))
 data3 = pickle.load(open(rospack.get_path('gait_hmm_ros') + '/scripts/' + prefix + "_upper_leg_annotated.p", "rb"))
 data2 = pickle.load(open(rospack.get_path('gait_hmm_ros') + '/scripts/' + prefix + "_lower_leg_annotated.p", "rb"))
-invalid_data = ed.classData(label=-1)
+invalid_data = ed.ClassData(label=-1)
 rospy.logwarn("Training %s", prefix)
 rospy.logwarn(use_imu)
 rospy.logwarn(use_measurements)
-upper_leg_data = fullEntry()
-lower_leg_data = fullEntry()
-foot_data = fullEntry()
+upper_leg_data = FullEntry()
+lower_leg_data = FullEntry()
+foot_data = FullEntry()
 t = np.zeros((4, 4))
 prev = -1
 

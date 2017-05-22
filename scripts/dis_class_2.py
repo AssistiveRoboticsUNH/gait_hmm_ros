@@ -88,7 +88,7 @@ print("Right Foot Topic: "+rf)
 print("Right Lower Leg Topic: "+rll)
 print("Right Upper Leg Foot Topic: "+rul)
 print("Waist Foot Topic: "+m)
-print joint_names
+print (joint_names)
 
 names = ['andreas1', 'andreas2', 'andreas3', 'andreas4', 'andreas5']
 
@@ -102,13 +102,6 @@ max_acc = 0.0
 full_data = []
 full_labels = []
 class_data = [[] for x in range(0, 2)]
-
-# eng = matlab.engine.start_matlab()
-# eng.sqrt(2.0)
-# eng.evalfis([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], eng.workspace['an1'], nargout=0)
-# anfis = eng.workspace['an1']
-# fis = eng.test_anfis_2('fsr_anfis_with_ir_prox_chk.mat', 0.4, 20, 1, 20, 0.9, nargout=0)
-# exit()
 
 #####################
 # Load enabled IMUS #
@@ -193,25 +186,8 @@ for i in range(0, len(full_data)):
     else:
         class_data[1].append(full_data[i])
 
-# class_means = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
-# class_vars = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
-# class_std = [[[] for x in range(len(full_data[0]))] for i in range(0, 2)]
-# class_cov = []
-# classifiers = []
-
 pickle.dump(full_data, open(fpath+"/trained_classifiers/"+imus_used+"full_data.p", 'wb'))
 pickle.dump(full_labels, open(fpath+"/trained_classifiers/"+imus_used+"full_labels.p", 'wb'))
-
-# for i in range(0, 2):
-#     cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
-#     class_cov.append(cov)
-#     for j in range(0, len(full_data[0])):
-#         class_means[i][j] = np.array(class_data[i][:])[:, [j]].mean(axis=0)
-#         class_vars[i][j] = np.array(class_data[i][:])[:, [j]].var(axis=0)
-#         class_std[i][j] = np.array(class_data[i][:])[:, [j]].std(axis=0)
-#         if np.isnan(np.sum(class_means[i][j])) or np.isnan(np.sum(class_vars[i][j])) or np.isnan(np.sum(class_std[i][j])):
-#             rospy.logerr("NAN OR inf values")
-#             exit()
 
 t = np.zeros((2, 2))
 
@@ -236,21 +212,10 @@ hmm_states = []
 state_names = ['swing', 'stance']
 hmm_states = []
 for i in range(0, 2):
-    # print np.array(class_means[i]).shape
-    # print np.array(class_cov[i]).shape
-    # dis = MultivariateGaussianDistribution(np.array(class_means[i]).transpose(), class_cov[i])
-    # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
     dis = MGD.from_samples(class_data[i])
     st = State(dis, name=state_names[i])
     distros.append(dis)
     hmm_states.append(st)
-
-    # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
-
-# model.bake()
-# print(model)
-# for s in model.states:
-#    print s.name
 
 skf = StratifiedKFold(full_labels, n_folds=folds)
 
@@ -302,7 +267,7 @@ for train_index, test_index in skf:
     # seq = train_data
 
     # Check for empty seq
-    if seq == []:
+    if not seq:
         rospy.logerr("Empty fitting sequence")
         continue
 
@@ -332,8 +297,6 @@ for train_index, test_index in skf:
     sum_ = 0.0
     for i in range(0, len(path)-1):
         if path[i+1][1].name != 'Gait-start' and path[i+1][1].name != 'Gait-end':
-            # print path[i][1].name
-            # print test_class[i]
             if path[i+1][1].name == state_names[test_class[i]]:
                 sum_ += 1.0
     acc = sum_ / float(str(len(test_data)))
@@ -341,9 +304,6 @@ for train_index, test_index in skf:
         max_acc = acc
         classifier = model
     stats.append(sum_ / float(str(len(test_data))))
-    # print str(sum_) + "/" + str(len(test_data))
-    # print sum_ / float(str(len(test_data)))
-    # print '------------------------------------'
     pickle.dump(classifier, open(fpath+"/trained_classifiers/"+imus_used+"classifier.p", 'wb'))
 pickle.dump(classifier, open(fpath+"/trained_classifiers/"+imus_used+"classifier.p", 'wb'))
 scio.savemat('stats.mat', {'stats': stats})

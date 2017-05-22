@@ -8,9 +8,8 @@ import scipy.io as sio
 from bisect import bisect_left
 
 
+# get phase of walking from mocap annotations
 def two_phase_assign(lower, upper, leg='right'):
-    # if leg == left:
-    # print("Lower : "+lower+", Upper :"+upper)
     if lower == 'LTO':
         if upper == 'LTO' or upper == 'LHS':
             return 'stance'
@@ -29,47 +28,28 @@ def two_phase_assign(lower, upper, leg='right'):
 
 def align(target, array):
     ret = []
-    tar_ind = [float(i)/float(len(target)) for i in range(0, len(target))]
-    arr_ind = [float(i)/float(len(array)) for i in range(0, len(array))]
-    print(len(tar_ind))
-    print(len(arr_ind))
-    # print tar_ind
-    # if len(target) > len(array):
-    for i in range(0, len(tar_ind)-1):
+    tar_ind = [float(i) / float(len(target)) for i in range(0, len(target))]
+    arr_ind = [float(i) / float(len(array)) for i in range(0, len(array))]
+    for i in range(0, len(tar_ind) - 1):
         pos = bisect_left(arr_ind, tar_ind[i])
         if pos == 0:
             ret.append(array[0])
             ret.append(0)
             continue
         if pos == len(arr_ind):
-            ret.append(array[pos-1])
+            ret.append(array[pos - 1])
             continue
-        before = array[pos-1]
+        before = array[pos - 1]
         after = array[pos]
-        # print("Appending pos: "+str(arr_ind[pos]))
         if after - tar_ind[i] < tar_ind[i] - before:
             ret.append(after)
         else:
             ret.append(before)
-    # else:
-    #     for i in range(0, len(array)):
-    #         pos = bisect_left(tar_ind, arr_ind[i])
-    #         if pos == 0:
-    #             ret.append(tar_ind[0])
-    #             continue
-    #         if pos == len(tar_ind):
-    #             ret.append(array[pos-1])
-    #             continue
-    #         before = array[pos - 1]
-    #         after = array[pos]
-    #         if after - tar_ind[i] < tar_ind[i] - before:
-    #             ret.append(after)
-    #         else:
-    #             ret.append(before)
-    print ret[len(ret)-1]
-    print array[len(array)-1]
-    print target[len(target)-1]
-    print len(ret)
+
+    print (ret[len(ret) - 1])
+    print (array[len(array) - 1])
+    print (target[len(target) - 1])
+    print (len(ret))
     print("-----------------------")
     return ret
 
@@ -82,7 +62,7 @@ class Annotator:
         imu_timestamps = sio.loadmat(pref + "_timestamps.mat")
         imu_timestamps = imu_timestamps.get('timestamps')[0]
         total_entries = len(imu_timestamps)
-        rospy.logwarn("Loaded " + str(total_entries)+ " timestamps from " + pref + "_timestamps.mat")
+        rospy.logwarn("Loaded " + str(total_entries) + " timestamps from " + pref + "_timestamps.mat")
         # print total_entries
         rl_timestamps = []
         #############################################
@@ -91,18 +71,12 @@ class Annotator:
         #############################################
         for i in imu_timestamps:
             rl_timestamps.append(abs(i - imu_timestamps[0]) / 1000000000)
-            # print abs(i - imu_timestamps[0]) / 1000000000
-        # exit()
 
-        # start_frame = min(matfile_data['LHS'][0], matfile_data['LHS'], matfile_data['LHS'], matfile_data['LHS'][0])
         mocap_data = []
         labels = []
         mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
         mocap_indexes = [0, 0, 0, 0]
         two_phase_labels = ['swing', 'stance']
-        # two_phase_indices = [0, 1]
-        # four_phase_labels = ['lswing', 'lstance', 'rswing', 'rstance']
-        # four_phase_indices = [0, 1, 2, 3]
 
         lhs = matfile_data.get('LHS')[0][0]
         lto = matfile_data.get('LTO')[0][0]
@@ -115,24 +89,16 @@ class Annotator:
         step_length_or = step_length
         step_length = align(imu_timestamps, step_length)
         foot_clearance = matfile.get('R5thToePosition')[0][0][:, 2]
-        print foot_clearance
         foot_clearance_or = foot_clearance
         foot_clearance = align(imu_timestamps, foot_clearance)
-        # ap_trunk_sway = matfile.get('COMmovement')[0][0]
-        # print ap_trunk_sway
         ap_trunk_sway = matfile.get('COMmovement')[0][0][:, 0]
         ap_trunk_sway = ap_trunk_sway[1:-1]  # remove first and last elements that ara NaN
-        print ap_trunk_sway
         ap_trunk_sway_or = ap_trunk_sway
         ap_trunk_sway = align(imu_timestamps, ap_trunk_sway)
-        # ml_trunk_sway = matfile.get('COMmovement')[0][0]
-        # print ml_trunk_sway
         ml_trunk_sway = matfile.get('COMmovement')[0][0][:, 1]
         ml_trunk_sway = ml_trunk_sway[1:-1]  # remove first and last elements that ara NaN
-        print ml_trunk_sway
         ml_trunk_sway_or = ml_trunk_sway
         ml_trunk_sway = align(imu_timestamps, ml_trunk_sway)
-
 
         mocap_lists = [lhs, lto, rhs, rto]
 
@@ -170,10 +136,8 @@ class Annotator:
         upper_index = 0
         i = 0
         while i < total_entries:
-            rospy.loginfo("#"+str(i)+": Lower Index :"+str(lower_index)+", Upper Index :"+str(upper_index))
-            # print(rl_timestamps[i])
+            rospy.loginfo("#" + str(i) + ": Lower Index :" + str(lower_index) + ", Upper Index :" + str(upper_index))
             if rl_timestamps[i] < mocap_data[0][1]:
-                # lower_bound = mocap_data[0][0]
                 rospy.logwarn(str(rl_timestamps[i]) + " is smaller than " +
                               str(mocap_data[0][0]) +
                               str(mocap_data[0][1])[0:10] + "]")
@@ -203,7 +167,7 @@ class Annotator:
             i += 1
 
         letter_labels = [two_phase_labels[i] for i in labels]
-        rospy.logwarn("Dumping "+str(len(labels))+" labels to " + pref + "_labels_annotated.mat")
+        rospy.logwarn("Dumping " + str(len(labels)) + " labels to " + pref + "_labels_annotated.mat")
         sio.savemat(pref + "_labels_annotated.mat", mdict={'labels': labels})
         rospy.logwarn("Dumping " + str(len(letter_labels)) + " labels to " + pref + "_labels_annotated_let.mat")
         sio.savemat(pref + "_labels_annotated_let.mat", mdict={'labels': letter_labels})
@@ -215,26 +179,26 @@ class Annotator:
                       + pref + "_foot_clearance_or.mat")
         sio.savemat(pref + "_foot_clearance_or.mat", mdict={'foot_clearance': foot_clearance_or})
 
-        rospy.logwarn("Dumping "+str(len(step_width))+" entries for step width to " + pref + "_step_width.mat")
+        rospy.logwarn("Dumping " + str(len(step_width)) + " entries for step width to " + pref + "_step_width.mat")
         sio.savemat(pref + "_step_width.mat", mdict={'step_width': step_width})
         rospy.logwarn("Dumping " + str(len(step_width_or)) + " entries for step width to "
                       + pref + "_step_width_or.mat")
         sio.savemat(pref + "_step_width_or.mat", mdict={'step_width': step_width_or})
 
-        rospy.logwarn("Dumping "+str(len(step_length))+" entries for step length to " + pref + "_step_length.mat")
+        rospy.logwarn("Dumping " + str(len(step_length)) + " entries for step length to " + pref + "_step_length.mat")
         sio.savemat(pref + "_step_length.mat", mdict={'step_length': step_length})
         rospy.logwarn("Dumping " + str(len(step_length_or)) + " entries for step length to "
                       + pref + "_step_length_or.mat")
         sio.savemat(pref + "_step_length_or.mat", mdict={'step_length': step_length_or})
 
-        rospy.logwarn("Dumping "+str(len(ap_trunk_sway))+" entries for anterior posterior trunk sway to "
+        rospy.logwarn("Dumping " + str(len(ap_trunk_sway)) + " entries for anterior posterior trunk sway to "
                       + pref + "_ap_trunk_sway.mat")
         sio.savemat(pref + "_ap_trunk_sway.mat", mdict={'ap_trunk_sway': ap_trunk_sway})
         rospy.logwarn("Dumping " + str(len(ap_trunk_sway_or)) + " entries for anterior posterior trunk sway to "
                       + pref + "_ap_trunk_sway_or.mat")
         sio.savemat(pref + "_ap_trunk_sway_or.mat", mdict={'ap_trunk_sway': ap_trunk_sway_or})
 
-        rospy.logwarn("Dumping "+str(len(ml_trunk_sway))+" entries for medio-lateral trunk sway to " +
+        rospy.logwarn("Dumping " + str(len(ml_trunk_sway)) + " entries for medio-lateral trunk sway to " +
                       pref + "_ml_trunk_sway.mat")
         sio.savemat(pref + "_ml_trunk_sway.mat", mdict={'ml_trunk_sway': ml_trunk_sway})
         rospy.logwarn("Dumping " + str(len(ml_trunk_sway_or)) + " entries for medio-lateral trunk sway to " +
@@ -288,9 +252,8 @@ class Annotator:
         pickle.dump(f, open(pref + '_figure_or.p', 'wb'))
         plt.savefig(pref + '_figure_or.png')
 
-        # plt.show()
-
         exit()
+
 
 if __name__ == "__main__":
     rospy.init_node('auto_annotate')

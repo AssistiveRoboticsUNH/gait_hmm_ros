@@ -1,7 +1,10 @@
 function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
-%EVALUATE_CLASSIFIER Summary of this function goes here
-%   Detailed explanation goes here
+%EVALUATE_CLASSIFIER 
+% evaluate an anfis classifier
+% and save the results
+%   
     wsName = [path,ws];
+    % load saved workspace for the classifier
     name = [path,'evaluated_',ws];
     workspace = load(wsName);
     assignin('base', 'k', k);
@@ -18,6 +21,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
     fsr = 0;
     ret_max = 0;
     component_mul = 0;
+    % format the input according to the measurements used
     if(size(strfind(ws, '_accel_'))~=0)
         component_mul = component_mul + 3;
     end
@@ -46,6 +50,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
         prox = 1;
     end
     
+    % k-fold validation
     if strcmp(workspace.CVO.Type,'kfold')
         for i=1 : k;
             trIdx = workspace.CVO.training(i);
@@ -98,7 +103,6 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
             min_a = min(output_test,[],1);
             [row,col] = size(output_test);
             output_test_norm = ((repmat(max_a,row,1)-output_test)./repmat(max_a-min_a,row,1));
-            %output_test_norm = normc(output_test);
             final_array = output_test;
             output_final = output_test_norm;
             means = output_test_norm;
@@ -134,15 +138,11 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
             for j=1 : size(output_test);
                 indexes = [];
                 w = 1;
-                %kekers = 0;
-                %while (w <= window) && (j <= x);
                 while (w <= 1) && (j <= x);
                     indexes = [indexes j];
-                %    kekers = kekers + output_test(j);
                     w = w+1;
                     j = j+1;
                 end
-                %kekers = kekers/w;
                 m = mean(output_test(indexes));
                 if(m<0.75)
                     final_array(indexes) = 0;
@@ -154,31 +154,6 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
                     final_array(indexes) = 3;
                 end
                 
-                %m = mean(output_test(indexes));
-                %if(m<0.5)
-                %    final_array(indexes) = 0;
-                %elseif(m<1.5)
-                %    final_array(indexes) = 1;
-                %elseif(m<2.5)
-                %    final_array(indexes) = 2;
-                %else
-                %    final_array(indexes) = 3;
-                %end
-                
-                
-                %means(indexes) = m;
-                %if m >= 0.6;
-                %if kekers >= 0.7;
-                %if(output_test(indexes(1))<output_test(indexes(end)))
-                %    final_array(indexes) = 1;
-                %else
-                %    final_array(indexes) = 0;
-                %end
-                %if(output_test_norm(j)<0.5)
-                %    final_array(j) = 1;
-                %elseif(output_test_norm(j)<0.5)
-                %    final_array(j) = 0;
-                %end
             end
             
             ret = (sum(te_cl==final_array))/length(te_cl)
@@ -190,9 +165,6 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
             assignin('base', 'output_test_final', output_test_final');
             assignin('base', 'te_cl', te_cl);
             assignin('base', 'means', means);
-            %assignin('base', 'bee', bee);
-            %assignin('base', 'bee_norm', bee_norm);
-            %assignin('base', 'final_bee', final_bee);
             for j=1 : size(output_test_norm);
                 if(final_array(j) == 1)&&(te_cl(j)==1);
                     correct_ones = correct_ones + 1;
@@ -244,9 +216,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
         tr_in = workspace.full_data(trIdx,:);
         tr_cl = workspace.full_labels(trIdx,:);
         te_in = workspace.te_in;
-        %te_in = workspace.full_data(teIdx,:);
         te_cl = workspace.te_cl;
-        %te_cl = workspace.full_labels(teIdx,:);
         
         [output_test,IRR,ORR,ARR] = evalfis(te_in,  workspace.an1);
         
@@ -291,7 +261,6 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
         min_a = min(output_test,[],1);
         [row,col] = size(output_test);
         output_test_norm = ((repmat(max_a,row,1)-output_test)./repmat(max_a-min_a,row,1));
-        %output_test_norm = normc(output_test);
         final_array = output_test;
         output_final = output_test_norm;
         means = output_test_norm;
@@ -327,15 +296,11 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
         for j=1 : size(output_test);
             indexes = [];
             w = 1;
-            %kekers = 0;
-            %while (w <= window) && (j <= x);
             while (w <= 10) && (j <= x);
                 indexes = [indexes j];
-            %    kekers = kekers + output_test(j);
                 w = w+1;
                 j = j+1;
             end
-            %kekers = kekers/w;
             m = mean(output_test(indexes));
             if(m<0.75)
                 final_array(indexes) = 0;
@@ -357,9 +322,6 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
         assignin('base', 'output_test_final', output_test_final');
         assignin('base', 'te_cl', te_cl);
         assignin('base', 'means', means);
-        %assignin('base', 'bee', bee);
-        %assignin('base', 'bee_norm', bee_norm);
-        %assignin('base', 'final_bee', final_bee);
         for j=1 : size(output_test_norm);
             if(final_array(j) == 1)&&(te_cl(j)==1);
                 correct_ones = correct_ones + 1;
@@ -395,13 +357,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
         ones_acc = ones_acc + correct_ones/sum(te_cl==1);
         assignin('base', 'ws', ws);
     end
-    %total_acc/k;
-    %ones_acc/k;
-    %zeroes_acc/k;
-    
-    %assignin('base', 'total_acc', total_acc/k);
-    %assignin('base', 'ones_acc', ones_acc/k);
-    %assignin('base', 'zeroes_acc', zeroes_acc/k);
+    % save classification results
     assignin('base', 'fsr', fsr);
     assignin('base', 'ir', ir);
     assignin('base', 'prox', prox);
@@ -415,15 +371,7 @@ function [ ret_max ] = evaluate_classifier(path, ws, k, thres, window )
     'IRR_', 'ORR_', 'ARR_',...
     'arduino_components', 'imu_entries', 'input_size');
     
-    %(sum(te_cl==final_bee))/length(te_cl)
     sum(totalLol==output_test);
     format long g;
-    %for j=0 : input_size :size(totalIRR, 2)-1;
-    %    fsr_rule_output = totalIRR(:, j+1:j+input_size)
-        %input_size
-        %size(totalIRR, 2)
-        %j/size(totalIRR, 2)
-    %end
-    %sum(te_cl==output_test_final(1:end-1))
 end
 

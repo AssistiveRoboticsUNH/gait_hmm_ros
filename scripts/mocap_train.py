@@ -15,7 +15,7 @@ import imu_callbacks as iparam
 from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import normalize
-from entry_data import DataEntry, fullEntry
+from entry_data import DataEntry, FullEntry
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
@@ -37,7 +37,7 @@ def create_data(imu, meas):
                     indexes_.append(d * 13 + k * 3 + 2)
                     indexes_.append(d * 13 + k * 3 + 3)
             d += 1
-    print indexes_
+    print (indexes_)
     return indexes_
 
 rospy.init_node('mocap_train')
@@ -48,9 +48,6 @@ rospack = rospkg.RosPack()
 path = rospack.get_path('gait_hmm_ros')+'/scripts/'
 pref = path + pref
 
-# imu_names = ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
-#             'rw', 'ls', 'lua', 'lla', 'lw']
-
 imu_names = iparam.imu_names
 
 topic_names = ["" for i in range(0, len(imu_names))]
@@ -60,12 +57,6 @@ meas_names = ['quat', 'gyro', 'accel', 'comp']
 meas_enable = [0 for i in range(0, len(meas_names))]
 
 imu_names_full = iparam.imu_names_full
-
-# imu_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
-#                  'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
-#                  'Mid', 'Chest',
-#                  'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
-#                  'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
 mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
 mocap_indexes = [0, 0, 0, 0]
@@ -124,7 +115,7 @@ rl_timestamps = []
 for i in imu_timestamps:
     rl_timestamps.append(abs(i - imu_timestamps[0])/1000000000)
 
-full_data = [fullEntry() for i in range(0, n_sensors)]
+full_data = [FullEntry() for i in range(0, n_sensors)]
 
 sum_ = 0
 sums = [0, 0, 0, 0]
@@ -198,8 +189,6 @@ for i in range(0, n_classes):
     for j in range(0, n_classes):
         t[i][j] /= sums[i]
 
-# rospy.loginfo(t)
-
 startprob = [0.5, 0.5]
 
 class_data = [[] for x in range(n_classes)]
@@ -226,17 +215,12 @@ if dis == 0:
         cov = np.ma.cov(np.array(class_data[i]), rowvar=False)
         class_cov.append(cov)
         for j in range(0, n_features):
-            # class_means[i][j] = np.mean(class_data[i], axis=0)
-            # class_vars[i][j] = np.var(class_data[i], axis=0)
             class_means[i][j] = np.array(class_data[i][:])[:, [j]].mean(axis=0)
             class_vars[i][j] = np.array(class_data[i][:])[:, [j]].var(axis=0)
             class_std[i][j] = np.array(class_data[i][:])[:, [j]].std(axis=0)
 
-    # rospy.logerr("#######################################")
     rospy.logwarn("Class means shape :"+str(np.array(class_means).shape))
-    # rospy.logwarn(class_means)
     rospy.logwarn("Class variances shape :"+str(np.array(class_vars).shape))
-    # rospy.logwarn(class_vars)
     rospy.logwarn("Class covariances shape :" + str(np.array(class_cov).shape))
 
     distros = []
@@ -252,10 +236,6 @@ if dis == 0:
     model.add_states(hmm_states)
     model.add_transition(model.start, hmm_states[0], 0.5)
     model.add_transition(model.start, hmm_states[1], 0.5)
-
-    # t = [[0.3, 0.7],
-    #      [0.7, 0.3]]
-
     t = normalize(t, axis=1, norm='l1')
 
     for i in range(0, n_classes):
@@ -283,9 +263,9 @@ if dis == 0:
                 # print path[i][1].name + " " + phase_labels[Y_test[i]]
                 if path[i][1].name == phase_labels[Y_test[i]]:
                     sum_ += 1.0
-            print str(sum_) + "/" + str(len(Y_test))
-            print sum_/float(len(Y_test))
-            print '------------------------------------'
+            print (str(sum_) + "/" + str(len(Y_test)))
+            print (sum_/float(len(Y_test)))
+            print ('------------------------------------')
         else:
             b = 0
             while b < len(X_test):
@@ -304,9 +284,9 @@ if dis == 0:
                     # print path[i][1].name + " " + phase_labels[Y_test[i]]
                     if path[i][1].name == phase_labels[seq_test[i]]:
                         sum_ += 1.0
-                print str(sum_) + "/" + str(len(seq))
-                print sum_/float(len(seq))
-                print '------------------------------------'
+                print (str(sum_) + "/" + str(len(seq)))
+                print (sum_/float(len(seq)))
+                print ('------------------------------------')
 
         live_data = []
         while not rospy.is_shutdown():
@@ -329,12 +309,10 @@ if dis == 0:
                     # print path[i][1].name + " " + phase_labels[Y_test[i]]
                     for f in range(0, n_features):
                         counts[phase_labels.index(paths[f][p][1].name)] += 1
-                    # print counts
                     index, value = max(enumerate(counts), key=operator.itemgetter(1))
                     name = phase_labels[index]
                     rospy.logwarn(name)
-                    # if path[i][1].name == phase_labels[Y_test[i]]:
-                print '------------------------------------'
+                print ('------------------------------------')
                 live_data = []
 
 else:
@@ -347,14 +325,10 @@ else:
         distros = []
         hmm_states = []
         for ii in range(0, n_classes):
-            # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
-            # dis = TriangleKernelDensity().from_samples(np.array(class_data[ii])[:, i])
-            # dis = GammaDistribution.from_samples(np.array(class_data[ii])[:, i])
             dis = NormalDistribution.from_samples(np.array(class_data[ii])[:, i])
             st = State(dis, name=phase_labels[ii])
             distros.append(dis)
             hmm_states.append(st)
-        # model = HMM(name="Gait")
 
         hmm_table[i].add_states(hmm_states)
         hmm_table[i].add_transition(hmm_table[i].start, hmm_states[0], 0.5)
@@ -365,8 +339,6 @@ else:
         for ii in range(0, n_classes):
             for j in range(0, n_classes):
                 hmm_table[i].add_transition(hmm_states[ii], hmm_states[j], t[ii][j])
-                # rospy.loginfo(hmm_states[ii].name+"("+str(ii)+")->
-                # "+hmm_states[j].name+"("+str(j)+") : "+str(t[ii][j]))
 
         hmm_table[i].bake()
 
@@ -375,11 +347,6 @@ else:
         Y_train = full_labels[train_index]
         X_test = full_features[test_index]
         Y_test = full_labels[test_index]
-        # print X_train[:, 0]
-        # print X_train[0][0]
-        # print X_train[1][0]
-        # print X_train[2][0]
-        # print len(X_train[:, 0])
 
         for f in range(0, n_features):
                 hmm_table[f].fit(list([X_train[:, f]]), algorithm='baum_welch', verbose=False)
@@ -387,34 +354,26 @@ else:
         if batch == 0:
             paths = []
 
-            # hmm_table[f].fit(list([X_train[:, f]]), algorithm='viterbi', verbose=False)
-            # hmm_table[f].fit(list([X_train[:, f]]),  algorithm='labelled', verbose=False)
             for f in range(0, n_features):
                 logp, path = hmm_table[f].viterbi(list(X_test[:, f]))
-                # logp, path = hmm_table[f].viterbi(list(X_test))
                 sum_ = 0.0
                 path = path[1:]
                 paths.append(path)
-                # print sum_/float(len(Y_test))
 
             for p in range(0, len(Y_test)):
                 counts = [0 for i in range(0, n_classes)]
-                # print path[i][1].name + " " + phase_labels[Y_test[i]]
                 for f in range(0, n_features):
                     counts[phase_labels.index(paths[f][p][1].name)] += 1
-                # print counts
                 index, value = max(enumerate(counts), key=operator.itemgetter(1))
                 name = phase_labels[index]
-                # if path[i][1].name == phase_labels[Y_test[i]]:
                 if name == phase_labels[Y_test[i]]:
                     sum_ += 1.0
-            print str(sum_) + "/" + str(len(Y_test))
-            print sum_/float(len(Y_test))
-            print '------------------------------------'
+            print (str(sum_) + "/" + str(len(Y_test)))
+            print (sum_/float(len(Y_test)))
+            print ('------------------------------------')
 
         else:
             b = 0
-            # print X_test
             while b < len(X_test):
                 bb = 0
                 seq = []
@@ -425,31 +384,24 @@ else:
                     seq_test.append(Y_test[b])
                     bb += 1
                     b += 1
-                    # hmm_table[f].fit(list([X_train[:, f]]), algorithm='viterbi', verbose=False)
-                    # hmm_table[f].fit(list([X_train[:, f]]),  algorithm='labelled', verbose=False)
                 for f in range(0, n_features):
                     # print np.array(seq)[:, 0]
                     logp, path = hmm_table[f].viterbi(np.array(seq)[:, f])
-                    # logp, path = hmm_table[f].viterbi(list(X_test))
                     sum_ = 0.0
                     path = path[1:]
                     paths.append(path)
-                    # print sum_/float(len(Y_test))
 
                 for p in range(0, len(seq_test)):
                     counts = [0 for i in range(0, n_classes)]
-                    # print path[i][1].name + " " + phase_labels[Y_test[i]]
                     for f in range(0, n_features):
                         counts[phase_labels.index(paths[f][p][1].name)] += 1
-                    # print counts
                     index, value = max(enumerate(counts), key=operator.itemgetter(1))
                     name = phase_labels[index]
-                    # if path[i][1].name == phase_labels[Y_test[i]]:
                     if name == phase_labels[seq_test[p]]:
                         sum_ += 1.0
-                print str(sum_) + "/" + str(len(seq_test))
-                print sum_/float(len(seq_test))
-                print '------------------------------------'
+                print (str(sum_) + "/" + str(len(seq_test)))
+                print (sum_/float(len(seq_test)))
+                print ('------------------------------------')
 
         live_data = []
         while not rospy.is_shutdown():
@@ -459,23 +411,17 @@ else:
             live_data.append(arr)
             if len(live_data) == 10:
                 for f in range(0, n_features):
-                    # print np.array(seq)[:, 0]
                     logp, path = hmm_table[f].viterbi(np.array(live_data)[:, f])
-                    # logp, path = hmm_table[f].viterbi(list(X_test))
                     sum_ = 0.0
                     path = path[1:]
                     paths.append(path)
-                    # print sum_/float(len(Y_test))
 
                 for p in range(0, len(path)):
                     counts = [0 for i in range(0, n_classes)]
-                    # print path[i][1].name + " " + phase_labels[Y_test[i]]
                     for f in range(0, n_features):
                         counts[phase_labels.index(paths[f][p][1].name)] += 1
-                    # print counts
                     index, value = max(enumerate(counts), key=operator.itemgetter(1))
                     name = phase_labels[index]
                     rospy.logwarn(name)
-                    # if path[i][1].name == phase_labels[Y_test[i]]:
-                print '------------------------------------'
+                print ('------------------------------------')
                 live_data = []

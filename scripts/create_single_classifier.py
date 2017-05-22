@@ -47,7 +47,7 @@ class SingleClassifier:
 
         # print self.full_data
         self.full_labels = self.full_labels[0]
-        print self.full_labels
+        print (self.full_labels)
         for i in range(0, len(self.full_data)):
             # print self.full_labels[i]
             # print self.full_data[i]
@@ -56,8 +56,8 @@ class SingleClassifier:
             else:
                 self.class_data[1].append(self.full_data[i])
 
-        print np.array(self.class_data[0]).shape
-        print np.array(self.class_data[1]).shape
+        print (np.array(self.class_data[0]).shape)
+        print (np.array(self.class_data[1]).shape)
         self.t = np.zeros((2, 2))
         sum_ = 0
         prev = -1
@@ -89,12 +89,6 @@ class SingleClassifier:
 
         tests = 0
 
-        # print("Initiating HMM")
-
-
-        # rospy.logwarn("Baked model")
-        # print("Initiated HMM")
-
         lel = -1
         for train_index, test_index in skf:
             if lel > 0:
@@ -106,18 +100,10 @@ class SingleClassifier:
             swings = 0
             stances = 0
             for i in range(0, 2):
-                # print("Creating distribution for class " + str(i))
-                # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
-                # print self.class_data[i]
                 dis = MGD.from_samples(self.class_data[i])
-                # print("Created distribution for class " + str(i) + " with mean : "
-                #       + str(dis.mu)+", and cov :")
-                # print(dis.cov)
                 st = State(dis, name=state_names[i])
                 distros.append(dis)
-                # rospy.logwarn("Appended distribution for class " + str(i))
                 hmm_states.append(st)
-                # rospy.logwarn("Appended state for class " + str(i))
 
             model = HMM()
             model.add_states(hmm_states)
@@ -139,32 +125,11 @@ class SingleClassifier:
             fn = 0.0
 
             seq = []
-            # for i in range(0, 2):
-            #     print("Creating distribution for class "+str(i))
-            #     # dis = MGD(np.array(class_means[i]).flatten(), np.array(class_cov[i]))
-            #     # print self.class_data[i]
-            #     dis = MGD.from_samples(self.class_data[i])
-            #     # print("Created distribution for class " + str(i) + " with mean : "
-            #     #       + str(dis.mu)+", and cov :")
-            #     # print(dis.cov)
-            #     st = State(dis, name=state_names[i])
-            #     distros.append(dis)
-            #     rospy.logwarn("Appended distribution for class " + str(i))
-            #     hmm_states.append(st)
-            #     rospy.logwarn("Appended state for class " + str(i))
-
-            # print model
 
             train_data = self.full_data[train_index]
             train_class = self.full_labels[train_index]
             test_data = self.full_data[test_index]
             test_class = self.full_labels[test_index]
-            # print(np.isfinite(train_data).all())
-            # print(np.isfinite(test_data).all())
-            # print(np.isnan(train_data.any()))
-            # print(np.isinf(train_data.any()))
-            # print(np.isnan(test_data.any()))
-            # print(np.isinf(test_data.any()))
 
             if (not np.isfinite(train_data.any())) or (not np.isfinite(test_data.any())) \
                     or (not np.isfinite(train_class.any())) or (not np.isfinite(test_data.any())):
@@ -220,11 +185,7 @@ class SingleClassifier:
                 rospy.logerr("Empty testing sequence")
                 continue
 
-            # rospy.logwarn("Start Viterbi")
-            # print len(test_data)
             log, path = model.viterbi(test_data)
-            # rospy.logwarn("Viterbi Done")
-            # rospy.logwarn(len(path))
             if (len(path) - 2) != len(test_data):
                 rospy.logerr(len(path))
                 rospy.logerr(path[0][1].name)
@@ -233,8 +194,6 @@ class SingleClassifier:
                 exit()
 
             tests += 1
-            # print len(path)
-            # print len(test_data)
             for i in range(0, len(path) - 2):
                 if path[i + 1][1].name != 'Gait-start' and path[i + 1][1].name != 'Gait-end':
                     if path[i + 1][1].name == 'swing':  # prediction is 0
@@ -250,37 +209,26 @@ class SingleClassifier:
                             tp += 1.0
                         elif test_class[i] == 0:  # class is 0
                             fp += 1.0
-                            # print str(sum_) + "/" + str(len(test_data))
-                            # print sum_ / float(str(len(test_data)))
-                            # print '------------------------------------'
-            # print(float(tn+tp)/float(fp+fn))
-            print swings
-            print stances
+            print (swings)
+            print (stances)
 
             if (tp + fn) != 0.0:
                 rospy.logwarn("Sensitivity : " + str(tp / (tp + fn)))
-                # sensitivity = tp / (tp + fn)
             else:
                 rospy.logwarn("Sensitivity : 0.0")
-                # sensitivity = 0.0
             if (tn + fp) != 0.0:
                 rospy.logwarn("Specificity : " + str(tn / (tn + fp)))
-                # specificity = tn_total / (tn_total + fp_total)
             else:
                 rospy.logwarn("Specificity : 0.0")
-                # specificity = 0.0
             if (tn + tp + fn + fp) != 0.0:
                 rospy.logwarn("Accuracy : " + str((tn + tp) / (tn + tp + fn + fp)))
-                # accuracy = (tn + tp) / (tn + tp + fn + fp)
             else:
                 rospy.logwarn("Accuracy : 0.0")
-                # accuracy = 0.0
 
             tn_total += tn
             tp_total += tp
             fn_total += fn
             fp_total += fp
-            # exit()
 
         tp_total /= tests
         tn_total /= tests

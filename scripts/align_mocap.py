@@ -1,29 +1,11 @@
 #!/usr/bin/env python
-import roslib
 import rospy
 import rospkg
 import pickle
-import time
-import math
-import string
-import sys
-import cv2
-import os.path
-import imu_callbacks as iparam
-import geometry_msgs.msg
-import std_msgs.msg
-import sensor_msgs.msg
-import numpy as np
-import matplotlib.pyplot as plt
 import scipy.io as sio
-from collections import namedtuple
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
-from datetime import datetime
 
 
 def assign_label_a(lower, upper, leg):
-    # rospy.logerr(lower + " " + upper)
     # if leg == left:
     if lower == 'LTO':
         if upper == 'LTO' or upper == 'LHS':
@@ -89,7 +71,7 @@ mocap_indexes = [0, 0, 0, 0]
 phase_labels_a = ['swing', 'stance']
 phase_indices_a = [0, 1]
 
-print imu_timestamps
+print(imu_timestamps)
 
 total_entries = len(imu_timestamps)
 lhs = matfile_data['LHS'][0][0]
@@ -113,11 +95,11 @@ rospy.loginfo("Start Index : " + str(start_index))
 # TO AN ARRAY WITH SEQUENTIAL  GAIT  #
 # EVENTS AND TIMESTAMPS              #
 ######################################
-print mocap_size
-print len(lhs)
-print len(lto)
-print len(rhs)
-print len(rto)
+print (mocap_size)
+print (len(lhs))
+print (len(lto))
+print (len(rhs))
+print (len(rto))
 for i in range(0, mocap_size):
     current_index = start_index % 4
     if(mocap_indexes[current_index]) < len(mocap_lists[current_index]):
@@ -126,7 +108,6 @@ for i in range(0, mocap_size):
                            [mocap_indexes[current_index]]))
     mocap_indexes[current_index] += 1
     start_index -= 1
-    # rospy.loginfo(mocap_data[i])
     i += 1
 
 i = 0
@@ -135,19 +116,9 @@ upper_index = 0
 
 for i in range(0, total_entries):
     if rl_timestamps[i] < mocap_data[0][1]:
-        # rospy.loginfo("#"+str(i)+": Lower Index : "+mocap_labels[lower_index]+
-        #               ", Upper Index :"+mocap_labels[upper_index])
         lower_bound = mocap_data[0][0]
-        # rospy.logwarn(str(rl_timestamps[i]) + " is smaller than " +
-        #               str(mocap_data[0][0]) +
-        #               str(mocap_data[0][1])[0:10] + "]")
     elif rl_timestamps[i] > mocap_data[len(mocap_data) - 1][1]:
-        # rospy.loginfo("#"+str(i)+": Lower Index : "+mocap_labels[lower_index] +
-        #               ", Upper Index :"+mocap_labels[upper_index])
         x = 0
-        # rospy.logwarn(str(rl_timestamps[i]) + " is greater than " +
-        #               str(mocap_data[len(mocap_data) - 1][0]) +
-        #               str(mocap_data[len(mocap_data) - 1][1])[0:10] + "]")
     else:
 
         while rl_timestamps[i] > mocap_data[lower_index][1] and lower_index < len(mocap_data) - 1:
@@ -156,12 +127,6 @@ for i in range(0, total_entries):
         upper_index = lower_index + 1
         while rl_timestamps[i] > mocap_data[upper_index][1] and upper_index < len(mocap_data) - 1:
             upper_index += 1
-        # rospy.logwarn(str(rl_timestamps[i]) + " is between " + str(lower_index) + " : " +
-        #               str(mocap_data[lower_index][0]) +
-        #               str(mocap_data[lower_index][1])[0:10] + "] and " +
-        #               str(upper_index) + " : " +
-        #               str(mocap_data[upper_index][0]) +
-        #               str(mocap_data[upper_index][1])[0:10] + "]")
     mocap_annotated.append(phase_labels_a.index(assign_label_a(str(mocap_data[lower_index][0]),
                                                                str(mocap_data[upper_index][0]), leg)))
 

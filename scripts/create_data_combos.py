@@ -3,10 +3,8 @@ import rospy
 import rospkg
 import pickle
 import imu_callbacks as iparam
-import numpy as np
 from pomegranate import*
 import scipy.io as sio
-from sklearn import preprocessing
 
 rospy.init_node('create_data_combos')
 input_names = []
@@ -124,20 +122,18 @@ subject = rospy.get_param('/subject', "")
 #####################
 # Load enabled IMUS #
 #####################
-print names
 for filename in names:
-    print filename
+    print (filename)
     labelindex = names.index(filename)
     sensor_data = []
     pref = fpath + filename
-    print joint_names
+    print (joint_names)
     for name in joint_names:
         full_name = pref + "_" + name + ".mat"
         rospy.logwarn(full_name)
         if os.path.isfile(full_name):
             if ("_" + name + "_") not in imus_used:
                 imus_used += (name + "_")
-            # rospy.logwarn("Loading" + full_name)
             x = sio.loadmat(full_name)
             x = x.get(name)
             total_entries = len(x)
@@ -152,7 +148,6 @@ for filename in names:
                     entry = np.concatenate((entry, x[i, 7:10]), axis=0)
                 if use_com == 1:
                     entry = np.concatenate((entry, x[i, 10:13]), axis=0)
-                # rospy.logwarn(len(entry))
                 data_entry.append(entry)
             if sensor_data == []:
                 sensor_data = data_entry
@@ -162,7 +157,6 @@ for filename in names:
             rospy.logerr("Data file not found : "+full_name)
             exit()
 
-
     x = []
     arduino = sio.loadmat(pref + "_arduino.mat")
     arduino = arduino.get("arduino")
@@ -170,12 +164,9 @@ for filename in names:
 
     for i in range(0, len(arduino)):
         entry = []
-        # print arduino[i, 2:]
         if use_fsr == 1:
-            # print (arduino[i, 3:6])
             entry = np.concatenate((entry, arduino[i, 2:5]), axis=0)
         if use_ir == 1:
-            # print(arduino[i, 7])
             entry = np.concatenate((entry, arduino[i, 5:6]), axis=0)
         if use_prox == 1:
             entry = np.concatenate((entry, arduino[i, 6:7]), axis=0)
@@ -202,7 +193,6 @@ for filename in names:
 
     foot_clearance_or = sio.loadmat(pref + "_foot_clearance_or.mat")
     foot_clearance_or = foot_clearance_or.get('foot_clearance')[0]
-    # print foot_clearance_or
     if full_foot_clearance_or == []:
         full_foot_clearance_or = foot_clearance_or
     else:
@@ -211,7 +201,6 @@ for filename in names:
     # STEP WIDTH
     step_width = sio.loadmat(pref + "_step_width.mat")
     step_width = step_width.get('step_width')[0]
-    # print step_width
     if full_step_width == []:
         full_step_width = step_width
     else:
@@ -219,7 +208,6 @@ for filename in names:
 
     step_width_or = sio.loadmat(pref + "_step_width_or.mat")
     step_width_or = step_width_or.get('step_width')[0]
-    # print step_width_or
     if full_step_width_or == []:
         full_step_width_or = step_width_or
     else:
@@ -228,7 +216,6 @@ for filename in names:
     # STEP LENGTH
     step_length = sio.loadmat(pref + "_step_length.mat")
     step_length = step_length.get('step_length')[0]
-    # print step_length
     if full_step_length == []:
         full_step_length = step_length
     else:
@@ -236,7 +223,6 @@ for filename in names:
 
     step_length_or = sio.loadmat(pref + "_step_length_or.mat")
     step_length_or = step_length_or.get('step_length')[0]
-    # print step_length_or
     if full_step_length_or == []:
         full_step_length_or = step_length_or
     else:
@@ -245,7 +231,6 @@ for filename in names:
     # AP TRUNK SWAY
     ap_trunk_sway = sio.loadmat(pref + "_ap_trunk_sway.mat")
     ap_trunk_sway = ap_trunk_sway.get('ap_trunk_sway')[0]
-    # print ap_trunk_sway
     if full_ap_trunk_sway == []:
         full_ap_trunk_sway = ap_trunk_sway
     else:
@@ -253,7 +238,6 @@ for filename in names:
 
     ap_trunk_sway_or = sio.loadmat(pref + "_ap_trunk_sway_or.mat")
     ap_trunk_sway_or = ap_trunk_sway_or.get('ap_trunk_sway')[0]
-    # print ap_trunk_sway_or
     if full_ap_trunk_sway_or == []:
         full_ap_trunk_sway_or = ap_trunk_sway_or
     else:
@@ -262,7 +246,6 @@ for filename in names:
     # ML TRUNK SWAY
     ml_trunk_sway = sio.loadmat(pref + "_ml_trunk_sway.mat")
     ml_trunk_sway = ml_trunk_sway.get('ml_trunk_sway')[0]
-    # print ml_trunk_sway_or
     if full_ml_trunk_sway == []:
         full_ml_trunk_sway = ml_trunk_sway
     else:
@@ -270,7 +253,6 @@ for filename in names:
 
     ml_trunk_sway_or = sio.loadmat(pref + "_ml_trunk_sway_or.mat")
     ml_trunk_sway_or = ml_trunk_sway_or.get('ml_trunk_sway')[0]
-    # print ml_trunk_sway_or
     if full_ml_trunk_sway_or == []:
         full_ml_trunk_sway_or = ml_trunk_sway_or
     else:
@@ -279,7 +261,6 @@ for filename in names:
     # LABELS
     labels = sio.loadmat(pref + "_labels_annotated.mat")
     labels = labels.get('labels')[0]
-    # print labels
     if full_labels == []:
         full_labels = labels
     else:
@@ -317,7 +298,7 @@ for filename in names:
         rospy.shutdown()
         exit()
 
-print full_normlabels
+print (full_normlabels)
 rospy.logwarn(np.array(full_data).shape)
 rospy.logwarn(np.array(full_normlabels).shape)
 rospy.logwarn(np.array(full_labels).shape)
@@ -338,10 +319,6 @@ rospy.logwarn(names)
 
 labels = []
 sensor_data = []
-
-# normalized_data = preprocessing.normalize(full_data, norm='l1', axis=0)
-# normalized_data = (full_data - full_data.min(0))/full_data.ptp(0)
-# normalized_data = full_data/full_data.max(axis=0)
 
 mins = np.min(full_data, axis=0)
 maxs = np.max(full_data, axis=0)

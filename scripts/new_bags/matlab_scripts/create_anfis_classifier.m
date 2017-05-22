@@ -1,6 +1,4 @@
 function [ output_args ] = create_anfis_classifier( input_file, label_file, normal_file, k )
-%CREATE_ANFIS_CLASSIFIER Summary of this function goes here
-%   Detailed explanation goes here
     if(k==0)
         k=7
     end
@@ -21,8 +19,6 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     full_data = full_data.data;
     
     full_data = full_data(1:end-remove, :);
-    %assignin('base', 'full_data_2', full_data);
-    %full_data
     full_labels = load(label_file);
     full_labels = double(full_labels.labels(1:end-remove));
     full_labels = full_labels';
@@ -60,7 +56,6 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
         
         dispOpt = ones(1,4);
         trnOpt = {500, 0.01, 0.01, 0.9, 1.1}
-        %trnOpt = NaN
         
         tr_in = full_data(trIdx,:);
         tr_cl = full_labels(trIdx,:);
@@ -77,10 +72,8 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
         tr_full = [tr_in tr_cl];
         te_full = [te_in te_cl];
     else
-        %kkk = int16(size(full_labels,1)*0.4)
         CVO = cvpartition(full_labels, 'HoldOut', 0.4);
         assignin('base', 'CVO', CVO);
-        %err = zeros(CVO.NumTestSets, 1);
         trIdx = CVO.training;
         assignin('base', 'trIdx', trIdx);
         teIdx = CVO.test;
@@ -92,10 +85,8 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
         valIdx = 0;
         testIdxFin = 0;
         
-        %dispOpt = ones(1,4);
         dispOpt = zeros(1,4);
         trnOpt = [100, 0.01, 0.01, 0.9, 1.1]
-        %trnOpt = NaN
         
         tr_in = full_data(trIdx,:);
         tr_cl = full_labels(trIdx,:);
@@ -151,7 +142,6 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     stepsize = 0;
     chkFis = 0;
     chkErr = 0;
-    % an1 = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt);
     [an1, error, stepsize, chkFis, chkErr] = anfis([tr_in tr_cl], gf2, trnOpt, dispOpt, [val_in val_cl]);
     size(tr_in)
     size(val_in)

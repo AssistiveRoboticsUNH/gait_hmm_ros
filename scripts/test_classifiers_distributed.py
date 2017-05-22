@@ -5,7 +5,7 @@ import pickle
 import glob
 import numpy as np
 from sklearn.cross_validation import StratifiedKFold
-from pomegranate import*
+from pomegranate import *
 from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
 from pomegranate import NormalDistribution as ND
@@ -37,7 +37,7 @@ if method == "batch":
     fpath = rospack.get_path('gait_hmm_ros') + '/scripts/trained_classifiers/*classifier.p'
     models = glob.glob(fpath)
 else:
-    fpath = rospack.get_path('gait_hmm_ros') + '/scripts/trained_classifiers/'+method+'classifier.p'
+    fpath = rospack.get_path('gait_hmm_ros') + '/scripts/trained_classifiers/' + method + 'classifier.p'
     models = [fpath]
 
 for s in models:
@@ -49,29 +49,29 @@ for model in models:
     TN = 0.0
     FP = 0.0
     FN = 0.0
-    model="/home/lydakis-local/ros_ws/src/" \
-          "gait_hmm_ros/scripts/trained_classifiers" \
-          "/quat_gyro_accel_bte_rf_rll_rul_m_classifier.p"
+    model = "/home/lydakis-local/ros_ws/src/" \
+            "gait_hmm_ros/scripts/trained_classifiers" \
+            "/quat_gyro_accel_bte_rf_rll_rul_m_classifier.p"
     rospy.logwarn(model)
     if "btr" not in model:
         batch_training = 0
     else:
         batch_training = 1
-    rospy.logwarn("Batch Training :"+str(batch_training))
+    rospy.logwarn("Batch Training :" + str(batch_training))
     if "bte" not in model:
         batch_test = 0
     else:
         batch_test = 1
     rospy.logwarn("Batch Testing :" + str(batch_test))
 
-    full_data = model[:len(model)-12]+"full_data.p"
-    full_labels = model[:len(model)-12]+"full_labels.p"
-    stats = model[:len(model)-12]+"stats_dis.p"
-    model_dis = model[:len(model)-12]+"classifier_dis.p"
+    full_data = model[:len(model) - 12] + "full_data.p"
+    full_labels = model[:len(model) - 12] + "full_labels.p"
+    stats = model[:len(model) - 12] + "stats_dis.p"
+    model_dis = model[:len(model) - 12] + "classifier_dis.p"
 
     fd = np.array(pickle.load(open(full_data, 'rb')))
     fd = fd / fd.max(axis=0)
-    print('Loaded : '+full_data)
+    print('Loaded : ' + full_data)
     fl = np.array(pickle.load(open(full_labels, 'rb')))
     print('Loaded : ' + full_labels)
 
@@ -122,7 +122,7 @@ for model in models:
 
         # CREATE ONE CLASSIFIER FOR EVERY INPUT
         for i in range(0, len(positive_data)):
-            classifiers.append(HMM(name="gait_"+str(i)))
+            classifiers.append(HMM(name="gait_" + str(i)))
         # CREATE THE POSITIVE DISTRIBUTIONS FOR EVERY INPUT
         for i in range(0, len(positive_data)):
             posdis = ND.from_samples(positive_data[:, [i]])
@@ -147,7 +147,7 @@ for model in models:
                 for k in range(0, 2):
                     classifiers[i].add_transition(hmm_states_dis[i][j], hmm_states_dis[i][k], t[j][k])
                     classifiers[i].bake()
-            # print classifiers[i]
+                    # print classifiers[i]
 
         f += 1
         # CREATE TESTING AND TRAINING DATA
@@ -156,8 +156,8 @@ for model in models:
         test_data = fd[test_index]
         test_class = fl[test_index]
         # FIT AND TEST MODEL
-        print len(train_data)
-        print len(test_data)
+        print (len(train_data))
+        print (len(test_data))
         for i in range(0, len(classifiers)):
             seq = []
             if batch_training == 1:
@@ -178,8 +178,6 @@ for model in models:
                 rospy.logerr("Empty fitting sequence")
                 continue
 
-
-
             seq2 = []
             if batch_test == 1:
                 s = 0
@@ -196,31 +194,29 @@ for model in models:
                 # seq2 = test_data[:][i]
                 seq2 = np.array(test_data[:, [i]])
 
-            print np.array(seq).shape
+            print (np.array(seq).shape)
             # print np.array(seq)
-            print np.array(seq2).shape
+            print (np.array(seq2).shape)
             # print np.array(seq2)
 
             if seq2 == [] or test_data == []:
                 rospy.logerr("Empty testing sequence")
                 continue
 
-
             # rospy.logwarn(seq)
             classifiers[i].fit(seq, algorithm='baum-welch', verbose='True')
 
-
-            rospy.logwarn("Start Viterbi for classifier %d/%d, fold %d", i+1, len(classifiers), tests+1)
+            rospy.logwarn("Start Viterbi for classifier %d/%d, fold %d", i + 1, len(classifiers), tests + 1)
             log, path = classifiers[i].viterbi(seq2)
             rospy.logwarn("Viterbi Done")
             # rospy.logwarn(len(path))
             sum_ = 0.0
 
-            if (len(path)-1) != len(test_data):
-                print len(path)
-                print path[0][1].name
-                print path[len(path) - 1][1].name
-                print len(test_data)
+            if (len(path) - 1) != len(test_data):
+                print (len(path))
+                print (path[0][1].name)
+                print (path[len(path) - 1][1].name)
+                print (len(test_data))
                 exit()
 
             paths_dis[i] = path
@@ -228,13 +224,13 @@ for model in models:
         tests += 1
         # GET THE MAJORITY DECISION FOR THE CLASSIFIERS
 
-        for p in range(0, len(path)-1):
+        for p in range(0, len(path) - 1):
             if path[p + 1][1].name != 'Gait-start' and path[p + 1][1].name != 'Gait-end':
                 sum_ = 0
                 for i in range(0, len(classifiers)):
-                    if paths_dis[i][p+1][1].name == 'stance':
+                    if paths_dis[i][p + 1][1].name == 'stance':
                         sum_ += 1
-                if sum_ < len(classifiers)/2:
+                if sum_ < len(classifiers) / 2:
                     pred = 0
                 else:
                     pred = 1
@@ -298,7 +294,6 @@ for model in models:
     pickle.dump(cl, open(model_dis, 'wb'))
     pickle.dump([TP * tests, TN * tests, FP * tests, FN * tests, tests, accuracy, sensitivity, specificity],
                 open(stats, 'wb'))
-
 
 print("------------------------------------------------------------------------")
 rospy.logwarn("Max Accuracy : " + str(max_accuracy) + " from " + max_accuracy_model)

@@ -1,6 +1,5 @@
 function [ output_args ] = create_anfis_classifier_normal( input_file, label_file, normal_file, k )
-%CREATE_ANFIS_CLASSIFIER Summary of this function goes here
-%   Detailed explanation goes here
+
     if(k==0)
         k=7
     end

@@ -2,7 +2,7 @@
 	<arg name = "prefix" default = "new_bags/subject3_6" />
 	<rosparam file="$(find gait_hmm_ros)/scripts/$(arg param_file)" command="load"/>
 	<arg name = "matfile" default = "none" />
-	<node name = "bag2pickle" pkg="gait_hmm_ros" type = "bag2mat.py" output = "screen" required = "true" >
+	<node name = "bag2mat" pkg="gait_hmm_ros" type = "bag2mat.py" output = "screen" required = "true" >
 		<param name = "prefix" value = "$(arg prefix)" />
 		<param name = "matfile" type = "" value = "$(arg matfile)" />
 		<param name = "rf" type = "string" value = "" />

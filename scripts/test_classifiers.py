@@ -70,15 +70,6 @@ for model in models:
     print('Loaded : ' + full_labels)
 
 
-    # try:
-    #     cl = pickle.load(open(model, 'rb'))
-    # except ValueError:
-    #     rospy.logerr("Error loading " + model)
-    #     continue
-    # except numpy.linalg.linalg.LinAlgError as err:
-    #     rospy.logerr("LinAlgError "+str(err))
-    # print('Loaded : ' + model)
-
     #############################
     # calculate transition probs#
     #############################
@@ -93,7 +84,7 @@ for model in models:
         sum_ += 1.0
 
     t = t / sum_
-    print t
+    print (t)
 
     ########################################
 
@@ -133,9 +124,6 @@ for model in models:
                 cl.add_transition(hmm_states[i], hmm_states[j], t[i][j])
         cl.bake()
 
-
-        # print("TRAIN:", train_index, "TEST:", test_index)
-        # rospy.logwarn("Fold #"+str(f))
         f += 1
         train_data = fd[train_index]
         train_class = fl[train_index]
@@ -177,11 +165,11 @@ for model in models:
             rospy.logerr("Empty testing sequence")
             continue
 
-        print np.array(seq).shape
-        print np.array(seq[0]).shape
+        print (np.array(seq).shape)
+        print (np.array(seq[0]).shape)
         # print np.array(seq)
-        print np.array(seq2).shape
-        print np.array(seq2[0]).shape
+        print (np.array(seq2).shape)
+        print (np.array(seq2[0]).shape)
         # print np.array(seq2)
         # seq = np.array(seq)
         seq2 = np.array(seq2)
@@ -197,10 +185,10 @@ for model in models:
         sum_ = 0.0
 
         if (len(path)-1) != len(test_data):
-            print len(path)
-            print path[0][1].name
-            print path[len(path) - 1][1].name
-            print len(test_data)
+            print (len(path))
+            print (path[0][1].name)
+            print (path[len(path) - 1][1].name)
+            print (len(test_data))
             exit()
 
         tests += 1

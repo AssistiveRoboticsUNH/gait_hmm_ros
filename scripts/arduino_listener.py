@@ -1,22 +1,16 @@
 #!/usr/bin/env python
-import time
-import sys
 import rospy
-# import config
 import serial
-import numpy as np
 from gait_hmm_ros.msg import ardu_msg
 from xbee import XBee
 from xbee import ZigBee
-
 
 data = ardu_msg()
 
 
 def make_msg(frame):
-    # data = frame
+    # create ROS message from arduino data
     fr_data = (frame['rf_data'][1:-1]).split(",")
-    #print fr_data[0]
     data.header.frame_id = 'arduino'
     data.sequ = int(fr_data[0])
     data.ir = float(fr_data[1])
@@ -24,7 +18,7 @@ def make_msg(frame):
     data.fsrfl = int(fr_data[3])
     data.fsrfr = int(fr_data[4])
     data.fsrbk = int(fr_data[5])
-    print frame['rf_data']
+    print (frame['rf_data'])
 
 
 # PORT = rospy.get_param('~xbee_port', '/dev/ttyUSB0')
@@ -34,6 +28,8 @@ BAUD_RATE = 9600
 ser = serial.Serial(PORT, BAUD_RATE)
 
 rospy.init_node('arduino_listener')
+
+# CONNECT TO WHATEVER ARDUINO DEVICE YOU ARE USING
 
 # for requested input
 # dev = XBee(ser, escaped=True)
@@ -48,15 +44,15 @@ r = rospy.Rate(50)
 message_received = 0
 
 while not rospy.is_shutdown():
-	data.header.stamp = rospy.Time.now()
-	arduPub.publish(data)
+    data.header.stamp = rospy.Time.now()
+    arduPub.publish(data)
 
-#         if message_received == 1:
+# if message_received == 1:
 #             arduPub.publish(data)
 #             r.sleep()
 
-#while not rospy.is_shutdown():
-#while True:
+# while not rospy.is_shutdown():
+# while True:
 #    try:
 #        make_msg(dev.wait_read_frame())
 #        data.header.stamp = rospy.Time.now()

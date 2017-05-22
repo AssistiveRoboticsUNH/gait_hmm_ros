@@ -47,9 +47,6 @@ function [ output_args ] = create_anfis_loop( subject )
     
     
     classifierList = ['~/full_data/',subject,'_classifierList.mat'];
-    %for fileName = dataFiles 
-    %    create_anfis_classifier( fileName, labelsFile, normalLabelsFile, 10 )
-    %end
     fileData = {3}
     dataFiles
     labelsFile

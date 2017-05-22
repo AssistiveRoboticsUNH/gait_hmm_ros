@@ -61,7 +61,7 @@ if len(sys.argv) == 3:
             lower_leg[i] = lower_leg[i]._replace(label=-1)
             upper_leg[i] = upper_leg[i]._replace(label=-1)
         i = 0
-# cv2.NamedWindow("Annotation Window", 1)
+
 keys = [27, 81, 82, 83, 84, 114, 115, 99]
 labels = ["FF", "HO", "SW", "HS"]
 total_entries = len(images)
@@ -131,11 +131,11 @@ while i < total_entries:
     # cv2.imshow("Annotation Window", images[i])
     cv2.imshow("Annotation Window", vis)
     k = cv2.waitKey(0)
-    print k & 255
+    print (k & 255)
     while k & 255 not in keys:
         print("Waiting for correct key")
         k = cv2.waitKey(0)
-        print k & 255
+        print (k & 255)
     print("Key : " + str(k & 255))
     # k = cv2.waitKey(0)
     k &= 255
@@ -187,10 +187,6 @@ while i < total_entries:
         rospy.logwarn("Skipped Frame")
         i += 1
     elif k == 115:
-        # S
-        # SAVE
-        # pickle.dump(lower_leg, open(pref+"_lower_leg_annotated.p","wb"))
-        # pickle.dump(upper_leg, open(pref+"_upper_leg_annotated.p","wb"))
         # pickle.dump(foot, open(pref+"_foot_annotated.p","wb"))
         pickle.dump(lower_leg, open(pref + "_lower_leg.p", "wb"))
         pickle.dump(upper_leg, open(pref + "_upper_leg.p", "wb"))

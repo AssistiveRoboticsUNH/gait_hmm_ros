@@ -2,8 +2,6 @@
 import rospy
 import rospkg
 import pickle
-import numpy as np
-# from sklearn.cross_validation import StratifiedKFold
 from sklearn.model_selection import StratifiedKFold
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
@@ -38,15 +36,15 @@ class DisClassifier:
         self.full_labels = scio.loadmat(self.labelfile)
         self.full_labels = self.full_labels.get("labels")
         self.full_labels = self.full_labels[0]
-        print self.full_labels
+        print (self.full_labels)
         for i in range(0, len(self.full_data)):
             if self.full_labels[i] == 0:
                 self.class_data[0].append((self.full_data[i]))
             else:
                 self.class_data[0].append((self.full_data[i]))
 
-        print np.array(self.class_data[0]).shape
-        print np.array(self.class_data[1]).shape
+        print (np.array(self.class_data[0]).shape)
+        print (np.array(self.class_data[1]).shape)
         self.t = np.zeros((2, 2))
         sum_ = 0
         prev = -1
@@ -60,15 +58,14 @@ class DisClassifier:
 
         self.t = self.t/sum_
         print("Transition probabilities")
-        print self.t
+        print (self.t)
 
     def build_dis_classifier(self):
         skf = StratifiedKFold(self.full_labels, n_folds=self.folds)
         classifier_array = []
         stats_array = []
         num_class = len(self.full_data[0])
-        print num_class
-        exit()
+        print (num_class)
         for cl in range(0, num_class):
             lel = -1
             tp_total = 0.0
@@ -180,8 +177,8 @@ class DisClassifier:
                                 tp += 1.0
                             elif test_class[i] == 0:  # class is 0
                                 fp += 1.0
-                print swings
-                print stances
+                print (swings)
+                print (stances)
                 if (tp + fn) != 0.0:
                     rospy.logwarn("Sensitivity : " + str(tp / (tp + fn)))
                     # sensitivity = tp / (tp + fn)
@@ -234,9 +231,6 @@ class DisClassifier:
             rospy.logerr("Total specificity: " + str(specificity))
             stats = [tn_total * tests, fn_total * tests, fp_total * tests, fn_total * tests, tests,
                      accuracy, sensitivity, specificity]
-            # pickle.dump(model, open(datafile + "classifier.p", 'wb'))
-            # pickle.dump(stats, open(datafile + "stats.p", 'wb'))
-            # scio.savemat(datafile + "stats.mat", {'stats': stats})
             rospy.logwarn("-------------------DONE-------------------------")
             classifier_array.append(model)
             stats_array.append(stats)

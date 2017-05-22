@@ -10,37 +10,26 @@
 #  are met:
 #
 #   * Redistributions of source code must#!/usr/bin/env python
-import roslib
 import rospy
-import tf
-import tf2_ros
 import rosbag
 import rospkg
 import sys
 import scipy.io as sio
 import imu_callbacks as iparam
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import medfilt
-from sklearn import preprocessing
-import pandas
-from pandas import rolling_median
-from sklearn import svm
-from sklearn.covariance import EllipticEnvelope
 
 
 def remove_outliers_bis(arr, k):
     mask = np.ones((arr.shape[0],), dtype=np.bool)
     mu, sigma = np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1)
-    print mu
+    print (mu)
     for j in range(arr.shape[1]):
         col = arr[:, j]
         for m in range(arr.shape[0]):
             if np.abs((arr[m][j] - mu[j]) / sigma[j]) > k:
-                print 'lol'
                 arr[m][j] = mu[j]
-    print arr.shape
-    print mask.shape
+    print (arr.shape)
+    print (mask.shape)
     return arr
 
 
@@ -71,9 +60,9 @@ def bag2mat(bag):
     arduino_pickle_data = []
 
     for i in range(0, len(imu_names)):
-        imu_topics[i] = rospy.get_param('/'+imu_names[i], imu_enable[i])
+        imu_topics[i] = rospy.get_param('/' + imu_names[i], imu_enable[i])
         if imu_topics[i] != 0:
-            rospy.logwarn(joint_names_full[i]+" topic : "+imu_topics[i])
+            rospy.logwarn(joint_names_full[i] + " topic : " + imu_topics[i])
 
     for topic, msg, t in bag.read_messages():
         if topic == "/usb_cam/image_raw":
@@ -92,39 +81,33 @@ def bag2mat(bag):
 
     for i in range(0, len(imu_vectors)):
         if len(imu_vectors[i]) != 0:
-            rospy.logwarn(str(len(imu_vectors[i]))+" frames in "+imu_names[i])
+            rospy.logwarn(str(len(imu_vectors[i])) + " frames in " + imu_names[i])
         if len(imu_vectors[i]) != 0:
             if len(imu_vectors[i]) < min_:
                 min_ = len(imu_vectors[i])
                 min_index = i
 
+    # transform timestamps from actual time to 0-duration
     for i in range(0, min_):
         ts = int(imu_timestamps[min_index][i])
-        # print ts
         indexes = []
         time = 0.0
         n = 0.0
         for j in range(0, len(imu_vectors)):
-            # t = imu_timestamps[j].index(min(imu_timestamps[j], key=lambda x: abs(x-ts)))
-            if(len(imu_vectors[j])) != 0:
-                t = imu_timestamps[j].index(min(imu_timestamps[j], key=lambda x: abs(x-ts)))
-                # print t
+            if (len(imu_vectors[j])) != 0:
+                t = imu_timestamps[j].index(min(imu_timestamps[j], key=lambda x: abs(x - ts)))
                 imu_indices[j].append(t)
                 time += imu_timestamps[j][t]
                 n += 1.0
             else:
                 imu_indices[j].append(-1)
-        # image_indexes.append(images.index(images[(min(image_timestamps, key=lambda x: abs(x-ts)))]))
-        pickle_timestamps.append(time/n)
-        # image_indices.append(image_timestamps.index((min(image_timestamps, key=lambda x: abs(x-ts)))))
-        arduino_indices.append(arduino_timestamps.index((min(arduino_timestamps, key=lambda x: abs(x-ts)))))
+        pickle_timestamps.append(time / n)
+        arduino_indices.append(arduino_timestamps.index((min(arduino_timestamps, key=lambda x: abs(x - ts)))))
 
-
+    # get imu and arduino data
     for i in range(0, min_):
         for j in range(0, len(imu_vectors)):
             if len(imu_vectors[j]) != 0:
-                # print imu_indices[j]
-                # print imu_indices[j][i]
                 data_ = imu_vectors[j][imu_indices[j][i]]
                 imu_pickle_data[j].append([data_.quat.quaternion.x, data_.quat.quaternion.y,
                                            data_.quat.quaternion.z, data_.quat.quaternion.w,
@@ -142,10 +125,6 @@ def bag2mat(bag):
     ard_1 = np.array(arduino_pickle_data)[:, [0, 1]]
     ard_2 = np.array(arduino_pickle_data)[:, 2:]
 
-    print len(ard_2)
-    print len(ard_2[0])
-    print len(ard_2.T[0])
-
     ard_2 = remove_outliers_bis(ard_2, 3)
 
     arduino_pickle_data = np.concatenate((ard_1, ard_2), axis=1)
@@ -156,26 +135,21 @@ def bag2mat(bag):
     ard_2 = 1.0 - (((1.0 - 0.0) * (maxs - ard_2)) / rng)
 
     arduino_normalized = np.concatenate((ard_1, ard_2), axis=1)
-    # print arduino_normalized.shape
-    # rospy.logerr(str(len(image_indices))+" images")
-    # rospy.logerr(str(len(arduino_indices))+" arduino readings")
-    rospy.logwarn(str(min_)+" total frames")
+    rospy.logwarn(str(min_) + " total frames")
 
     full_data = []
     full_normalized = []
 
+    # save original and normalized data
     for j in range(0, len(imu_vectors)):
         if len(imu_pickle_data[j]) != 0:
             name = pref + "_" + joint_names[j] + ".mat"
             rospy.logwarn("dumping " + imu_names[j] + " with " + str(len(imu_pickle_data[j])) + " entries to " + name)
-            # pickle.dump(imu_pickle_data[j], open(name, "wb"))
             sio.savemat(name, mdict={joint_names[j]: imu_pickle_data[j]})
-            # sio.savemat(name, imu_pickle_data[j])
             if full_data == []:
                 full_data = imu_pickle_data[j]
             else:
                 full_data = np.hstack((full_data, imu_pickle_data[j]))
-            # full_data.append(imu_pickle_data[j])
             name = pref + "_" + joint_names[j] + "_normalized.mat"
 
             mins = np.min(imu_pickle_data[j], axis=0)
@@ -183,19 +157,19 @@ def bag2mat(bag):
             rng = maxs - mins
             normalized = 1.0 - (((1.0 - 0.0) * (maxs - imu_pickle_data[j])) / rng)
 
-            # normalized = preprocessing.normalize(imu_pickle_data[j], norm='l1')
             if full_normalized == []:
                 full_normalized = normalized
             else:
                 full_normalized = np.hstack((full_normalized, normalized))
-            # full_normalized = full_normalized.append(normalized)
-            rospy.logwarn("dumping normalized " + imu_names[j] + " with " + str(len(normalized)) + " entries to " + name)
-            sio.savemat(name, mdict={joint_names[j]+"_normalized": normalized})
+            rospy.logwarn(
+                "dumping normalized " + imu_names[j] + " with " + str(len(normalized)) + " entries to " + name)
+            sio.savemat(name, mdict={joint_names[j] + "_normalized": normalized})
             rospy.logwarn(np.array(imu_pickle_data[j]).shape)
             rospy.logwarn(np.array(normalized).shape)
             rospy.logwarn('-------------------------------------------------------------')
 
-    rospy.logwarn("dumping full normalized with " + str(len(full_normalized)) + " entries to " + pref + "_full_normalized.mat")
+    rospy.logwarn(
+        "dumping full normalized with " + str(len(full_normalized)) + " entries to " + pref + "_full_normalized.mat")
     sio.savemat(pref + "_full_normalized.mat", mdict={"data": full_normalized})
     rospy.logwarn(np.array(full_normalized).shape)
     rospy.logwarn('-------------------------------------------------------------')
@@ -215,9 +189,11 @@ def bag2mat(bag):
     sio.savemat(pref + "_arduino.mat", mdict={'arduino': arduino_pickle_data})
     rospy.logwarn(np.array(arduino_pickle_data).shape)
     rospy.logwarn('-------------------------------------------------------------')
-    rospy.logwarn("dumping " + str(len(arduino_normalized)) + " normalized arduino readings to " + pref + "_arduino_normalized.mat")
+    rospy.logwarn("dumping " + str(
+        len(arduino_normalized)) + " normalized arduino readings to " + pref + "_arduino_normalized.mat")
     sio.savemat(pref + "_arduino_normalized.mat", mdict={'arduino': arduino_normalized})
     rospy.logwarn(np.array(arduino_normalized).shape)
+
 
 if __name__ == "__main__":
     rospy.init_node('bag2mat')

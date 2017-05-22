@@ -31,8 +31,6 @@ DataEntry = namedtuple('DataEntry',
 
 
 def classify(arduino_reading):
-    # fsrbk fsrfl fsrfr
-    # print(str(arduino_reading[4])+" "+str(arduino_reading[4]) + " " + str(arduino_reading[4]))
     if (arduino_reading[4] == 1 and arduino_reading[5] == 1 and arduino_reading[6] == 1) or \
             (arduino_reading[4] == 1 and arduino_reading[5] == 0 and arduino_reading[6] == 1):
         print('stance')
@@ -46,7 +44,6 @@ def classify(arduino_reading):
     else:
         print('stance')
         return 'stance'
-
 
 rospy.init_node('auto_annotate')
 pref = rospy.get_param('~prefix', "none")
@@ -62,20 +59,13 @@ if matfile != "none":
 leg = rospy.get_param("~leg", "left")
 
 joint_names = iparam.imu_names
-# ['rf', 'rll', 'rul', 'lf', 'lll', 'lua', 'lul', 'm', 'ch', 'rs', 'rua', 'rla',
-#                'rw', 'ls', 'lua', 'lla', 'lw']
+
 
 imu_names = iparam.imu_param_names
-# ['~rf', '~rll', '~rul', '~lf', '~lll', '~lua', '~lul', '~m', '~ch', '~rs', '~rua', '~rla',
-#          '~rw', '~ls', '~lua', '~lla', '~lw']
+
 
 joint_names_full = iparam.imu_names_full
 
-# joint_names_full = ['Right Foot', 'Right Lower Leg', 'Right Upper Leg',
-#                    'Left Foot', 'Left Lower Leg', 'Left Upper Leg',
-#                    'Mid', 'Chest',
-#                    'Right Shoulder', 'Right Upper Arm', 'Right Lower Arm', 'Right Wrist',
-#                    'Left Shoulder', 'Left Upper Arm', 'Left Lower Arm', 'Left Wrist']
 
 imu_pickled_data = []
 arduino_pickled_data = []
@@ -94,7 +84,7 @@ for name in joint_names:
         # x = pickle.load(open(fullname, "rb"))
         x = sio.loadmat(fullname)[name]
         # print x
-        print len(x)
+        print (len(x))
         imu_pickled_data.append(x)
         total_entries = len(x)
     else:
@@ -103,20 +93,13 @@ for name in joint_names:
 rospy.logwarn("Loading timestamps from " + pref + "_timestamps.mat")
 # imu_timestamps = pickle.load(open(pref + "_timestamps.mat", "rb"))
 imu_timestamps = sio.loadmat(pref + "_timestamps.mat")['timestamps']
-print imu_timestamps
+print (imu_timestamps)
 rospy.logwarn("Loading arduino data from " + pref + "_arduino.mat")
 arduino_pickled_data = sio.loadmat(pref + "_arduino.mat")['arduino']
 
 rospy.logwarn("Loading arduino indices from " + pref + "_ar_index.mat")
 arduino_indices = sio.loadmat(pref + "_ar_index.mat")['ar_ind']
 
-# rospy.logwarn("Loading image indices from " + pref + "_im_index.mat")
-# image_indices = sio.loadmat(pref + "_im_index.mat")
-
-# rospy.logwarn("Loading images from " + pref + "_images.p")
-# images = pickle.load(open(pref + "_images.p", "rb"))
-# rospy.logwarn("Loading arduino indices from " + pref + "_indices.p")
-# indices = pickle.load(open(pref + "_indices.p", "rb"))
 rl_timestamps = []
 
 #############################################
@@ -126,7 +109,6 @@ rl_timestamps = []
 for i in imu_timestamps:
     rl_timestamps.append(abs(i - imu_timestamps[0]) / 1000000000)
 
-# start_frame = min(matfile_data['LHS'][0], matfile_data['LHS'], matfile_data['LHS'], matfile_data['LHS'][0])
 mocap_data = []
 class_pickle = []
 mocap_labels = ['LHS', 'LTO', 'RHS', 'RTO']
@@ -136,7 +118,6 @@ phase_indices_a = [0, 1]
 phase_labels_b = ['lswing', 'lstance', 'rswing', 'rstance']
 
 for i in range(0, total_entries):
-    # rospy.loginfo("#"+str(i)+": Lower Index :"+str(lower_index)+", Upper Index :"+str(upper_index))
     g = classify(arduino_pickled_data[i])
     class_pickle.append(phase_labels_a.index(g))
 

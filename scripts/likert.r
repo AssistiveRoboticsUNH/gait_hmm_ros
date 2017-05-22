@@ -4,9 +4,9 @@ require(likert)
 data(pisaitems)
 
 ##### Item 24: Reading Attitudes
-items24 <- pisaitems[,substr(names(pisaitems), 1,5) == 'ST24Q']
+items24 <- pisaitems[,substr(names(pisaitems), 1,7) == 'ST24Q']
 head(items24); ncol(items24)
-mylevels <- c('Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Agree')
+mylevels <- c('Strongly Disagree', 'Somewhat Disagree', 'Neutral', 'Somewhat Agree', 'Strongly Agree')
 part1 <- c( "Somewhat Disagree", "Somewhat Agree", "Somewhat Agree", "Agree", "Agree", "Somewhat Agree","Somewhat Agree","Agree","Agree")
 part2 <- c( "Neutral", "Somewhat Agree", "Agree", "Agree", "Somewhat Disagree", "Somewhat Disagree","Neutral","Somewhat Disagree","Agree")
 part3 <- c( "Somewhat Disagree", "Somewhat Agree", "Somewhat Agree", "Agree", "Somewhat Disagree", "Neutral","Somewhat Agree","Somewhat Disagree","Somewhat Agree")
@@ -20,17 +20,21 @@ q7 <-c("Somewhat Agree", "Neutral", "Somewhat Agree")
 q8 <-c("Agree", "Somewhat Disagree", "Somewhat Disagree")
 q9 <-c("Agree", "Agree", "Somewhat Agree")
 
-qq1 <-c("Agree","Somewhat Disagree","Neutral")
-qq2<-c("Somewhat Agree","Somewhat Agree","Somewhat Agree")
-qq3<-c("Agree","Somewhat Disagree","Agree")
-qq4<-c("Agree","Agree","Somewhat Agree")
-qq5<-c("Somewhat Agree","Somewhat Disagree","Somewhat Agree")
+qq1 <-c("Strongly Agree", "Somewhat Disagree", "Strongly Agree")
+qq2<-c("Strongly Agree", "Neutral", "Somewhat Agree")
+qq3<-c("Strongly Agree", "Somewhat Agree", "Neutral")
+qq4<-c("Strongly Agree", "Somewhat Agree", "Somewhat Agree")
+qq5<-c("Strongly Agree", "Somewhat Disagree", "Somewhat Agree")
+qq6<-c("Strongly Agree", "Somewhat Agree", "Somewhat Disagree")
+qq7<-c("Strongly Agree", "Somewhat Agree", "Somewhat Disagree")
 
 edf2<-data.frame("Question 1"=qq1,
 		"Question 2"=qq2,
 		"Question 3"=qq3,
 		"Question 4"=qq4,
-		"Question 5"=qq5)
+		"Question 5"=qq5,
+		"Question 6"=qq6,
+		"Question 7"=qq7)
 
 edf <- data.frame( "Question 1" = q1,
                    "Question 2" = q2,
@@ -47,7 +51,9 @@ names(edf2)<-c(
 	ST24Q02="Question 2",
 	ST24Q03="Question 3",
 	ST24Q04="Question 4",
-	ST24Q05="Question 5")
+	ST24Q05="Question 5",
+	ST24Q06="Question 6",
+	ST24Q07="Question 7")
 
 names(edf) <- c(
   ST24Q01="Question 1",

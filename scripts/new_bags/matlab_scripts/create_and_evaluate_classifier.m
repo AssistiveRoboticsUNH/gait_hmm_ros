@@ -1,6 +1,5 @@
 function [ output_args ] = create_anfis_classifier( input_file, label_file, normal_file, k )
-%CREATE_ANFIS_CLASSIFIER Summary of this function goes here
-%   Detailed explanation goes here
+
     subject = '';
     gyro_accel = '';
     if(size(strfind(input_file, 'subject1'))~=0)
@@ -24,8 +23,6 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     full_data = full_data.data;
     
     full_data = full_data(1:end-remove, :);
-    %assignin('base', 'full_data_2', full_data);
-    %full_data
     full_labels = load(label_file);
     full_labels = double(full_labels.labels(1:end-remove));
     full_labels = full_labels';
@@ -45,7 +42,6 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     assignin('base', 'full_labels', full_labels);
     assignin('base', 'normal_labels', normal_labels);
     assignin('base', 'binary_labels', binary_labels);
-    
     
     CV02 = 0;
     val_in = 0;
@@ -125,13 +121,9 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     total_ORR_list = {};
     total_IRR_lsit = {};
     total_ARR_list = {};
-    % ORR_list = {};
-    % IRR_list = {};
-    % ARR_list = {};
     total_imu_entries = 0;
     
     for i = 1:8
-        %kkk = int16(size(full_labels,1)*0.4)
         %%%%%%% CREATE TRAINING PARTITION %%%%%%%%%%%%%%
         CVO = cvpartition(full_labels, 'HoldOut', 0.4);
         CVO_list{i} = CVO; 
@@ -291,18 +283,6 @@ function [ output_args ] = create_anfis_classifier( input_file, label_file, norm
     output = evalfis(te_in, an1);
     assignin('base', 'output', output);
     
-    % max_a = max(output,[],1);
-    % min_a = min(output,[],1);
-    % [row,col] = size(output);
-    % output_norm=((repmat(max_a,row,1)-output)./repmat(max_a-min_a,row,1));
-    % assignin('base', 'output_norm', output_norm);
-    % name = [name(1:end-4), '_workspace.mat']
-    % save(name, 'an1', 'error', 'stepsize', 'chkFis', 'chkErr',...
-    % 'binary_labels', 'val_cl', 'val_in', 'CVO', 'CVO2','full_data',...
-    % 'full_labels', 'gf2', 'normal_labels', 'output', 'output_norm', ...
-    % 'radii', 'te_cl', 'te_in', 'teIdx', 'tr_cl', 'tr_in', 'trIdx', ...
-    % 'xBounds', 'k',...
-    % 'CVO_list', 'CVO2_list', 'max_acc', )
     
     save(evaluated_name,...
     'max_acc',...

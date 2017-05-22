@@ -1,5 +1,4 @@
 p = 'normal';
-%p = 'phase'
 create_anfis_list('subject1');
 create_anfis_list('subject2');
 create_anfis_list('subject3');

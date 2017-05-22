@@ -1,20 +1,12 @@
 #!/usr/bin/env python
 import rospy
 import rospkg
-import tf
-import tf2_ros
-import geometry_msgs.msg
-import time
-import math
 import pickle
-import sys
-import numpy as np
 import entry_data as ed
-from std_msgs.msg import Int32
 from threespace_ros.msg import dataVec
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import normalize
-from entry_data import DataEntry, fullEntry
+from entry_data import DataEntry, FullEntry
 from pomegranate import*
 from pomegranate import HiddenMarkovModel as HMM
 from pomegranate import MultivariateGaussianDistribution as MGD
@@ -39,10 +31,6 @@ def create_training_data(data_, imu, meas):
                             f_.append(data_[k][jj*13 + ii*3 + 3])
         ff_.append(f_)
     return ff_
-
-# rul_vec = np.zeros(13)
-# rll_vec = np.zeros(13)
-# rf_vec = np.zeros(13)
 
 rul_vec = [0 for i in range(0, 13)]
 rll_vec = [0 for i in range(0, 13)]
@@ -121,13 +109,13 @@ use_measurements[3] = rospy.get_param('~use_comp', 0)
 data = pickle.load(open(rospack.get_path('gait_hmm_ros')+'/scripts/'+prefix + "_foot_annotated.p", "rb"))
 data3 = pickle.load(open(rospack.get_path('gait_hmm_ros')+'/scripts/'+prefix + "_upper_leg_annotated.p", "rb"))
 data2 = pickle.load(open(rospack.get_path('gait_hmm_ros')+'/scripts/'+prefix + "_lower_leg_annotated.p", "rb"))
-invalid_data = ed.classData(label=-1)
+invalid_data = ed.ClassData(label=-1)
 rospy.logwarn("Training %s", prefix)
 rospy.logwarn(use_imu)
 rospy.logwarn(use_measurements)
-upper_leg_data = fullEntry()
-lower_leg_data = fullEntry()
-foot_data = fullEntry()
+upper_leg_data = FullEntry()
+lower_leg_data = FullEntry()
+foot_data = FullEntry()
 t = np.zeros((4, 4))
 prev = -1
 
@@ -169,7 +157,7 @@ class_data = [[] for x in range(4)]
 ff = np.array(create_training_data(f1, use_imu, use_measurements))
 n_signals = len(ff[0])
 
-print n_signals == ff.shape[1]
+print (n_signals == ff.shape[1])
 
 for i in range(0, len(ff)):
     class_data[labels[i]].append(ff[i])
@@ -190,20 +178,11 @@ for i in range(0, n_classes):
 
 startprob = [0.25, 0.25, 0.25, 0.25]
 
-# t = [[0.7, 0.3, 0.0, 0.0],\
-#        [0.0, 0.7, 0.3, 0.0],\
-#        [0.0, 0.0, 0.7, 0.3],\
-#        [0.3, 0.0, 0.0, 0.7]]
-
-
 distros = []
 hmm_states = []
 state_names = ['ff', 'ho', 'sw', 'hs']
 hmm_states = []
 for i in range(0, n_classes):
-    # print np.array(class_means[i]).shape
-    # print np.array(class_cov[i]).shape
-    # dis = MultivariateGaussianDistribution(np.array(class_means[i]).transpose(), class_cov[i])
     dis = MGD\
         (np.array(class_means[i]).flatten(),
          np.array(class_cov[i]))
@@ -211,32 +190,25 @@ for i in range(0, n_classes):
     distros.append(dis)
     hmm_states.append(st)
 model = HMM(name="Gait")
-# print hmm_states
-# print distros
-print t
+print (t)
 
 model.add_states(hmm_states)
 model.add_transition(model.start, hmm_states[0], 1.00)
 model.add_transition(model.start, hmm_states[1], 0.0)
 model.add_transition(model.start, hmm_states[2], 0.0)
 model.add_transition(model.start, hmm_states[3], 0.0)
-# model.add_transition(model.start, hmm_states[0], 0.25)
-# model.add_transition(model.start, hmm_states[1], 0.25)
-# model.add_transition(model.start, hmm_states[2], 0.25)
-# model.add_transition(model.start, hmm_states[3], 0.25)
 
 for i in range(0, n_classes):
     for j in range(0, n_classes):
         model.add_transition(hmm_states[i], hmm_states[j], t[i][j])
-        # print (states[i].name+"("+str(i)+")-> "+states[j].name+"("+str(j)+") : "+str(t[i][j]))
 
 model.bake()
 
 seq = list([ff[:limit]])
-print model.name
-print model.d
-print model.edges
-print model.silent_start
+print (model.name)
+print (model.d)
+print (model.edges)
+print (model.silent_start)
 
 # print model
 model.fit(seq, algorithm='baum-welch', verbose='True')
@@ -247,12 +219,11 @@ print len(path)
 sum_ = 0.0
 for i in range(0, len(path)):
     if path[i][1].name != 'Gait-start':
-        # print path[i][1].name + " " + state_names[labels[i+limit - 1]]
         if path[i][1].name == state_names[labels[i+limit - 1]]:
             sum_ += 1.0
-print str(sum_) + "/" + str(len(list(ff[limit:limit])))
-print sum_/float(len(list(ff[limit:])))
-print '------------------------------------'
+print (str(sum_) + "/" + str(len(list(ff[limit:limit]))))
+print (sum_/float(len(list(ff[limit:]))))
+print ('------------------------------------')
 
 counter = 0
 stream = []
@@ -281,6 +252,3 @@ while not rospy.is_shutdown():
         stream = []
     # rospy.spin()
 exit()
-# print model2.states
-# print path[i][1].name + " " + str(path[i][0]) + " " +\
-#  str(state_names.index(path[i][1].name)) + " " + str(labels[i+limit])

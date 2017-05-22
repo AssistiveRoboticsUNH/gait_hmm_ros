@@ -52,7 +52,6 @@ function [ output_args ] = plots_and_stats( subject )
             max_overall_mean_accuracy = average_total_accuracy;
             index = i;
         end
-        % break;
     end
     max_overall_mean_accuracy
     index  
@@ -69,8 +68,6 @@ function [ output_args ] = plots_and_stats( subject )
     [max_total_accuracy, max_index] = max(accuracy_list)
     [min_total_accuracy, min_index] = min(accuracy_list)    
     std_dev = std(accuracy_list);
-    
-    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     std_dev = std(accuracy_list);
@@ -158,7 +155,6 @@ function [ output_args ] = plots_and_stats( subject )
     x = final_result_list(max_index);
     x = x{1};
     y = labels;
-    %y = y{1};
     plot(x)
     hold on; 
     plot(y)
@@ -170,5 +166,4 @@ function [ output_args ] = plots_and_stats( subject )
     legend('Output Classification', 'Gait Type', 'Location', 'northwest');
     title(graph_title)
     print(['~/full_data/trained_wss/' subject],'-depsc')
-    %set(gca, 'YTick',[-10 -5 0 5 10]);
 end
