@@ -11,8 +11,8 @@ Included are the data for 3 subjects, with 5 intervals per subject where:
 
 (Code not documented is deprecated/not used)
 
-#Nodes
-##Record data
+# Nodes
+## Record data
 ~~~~
 ./launch/record.sh \<output_bagfile_name\> \<duration_in_minutes\>
 ~~~~
@@ -72,7 +72,7 @@ Uses the /launch/create_data.launch script which accepts the following parameter
 - rul: topic for upper leg IMU, empty to not use
 - m: topic for lower back IMU, empty to not use
 
-##Train classifiers:
+## Train classifiers:
 Train Single Classifier
 ~~~~
 rosrun gait_hmm_ros create_single_classifier.py _folds:=\<number of training folds\> _norm:=\<1 or 0, use normalized data or not\>
@@ -92,7 +92,7 @@ python API, numpy, and scipy. Tested in ROS Indigo
 
 Sample bag files are located in scripts/new_bags/subject[number]_[trial].bag
 
-##Launch files
+## Launch files
 * **record.sh**: waits 5 seconds and the starts recording available IMU frames
     <pre><code>sh record.sh [filename] [duration-minutes]</code></pre>
 * **batch_create_combos_x.sh**: create different datasets using subsets of the available
@@ -123,13 +123,13 @@ measurements
    [foot_accelerometer_y][foot_accelerometer_z][foot_gyroscope_x][foot_gyroscope_y][foot_gyroscope_z]
    [foot_magnetometer_x][foot_magnetometer_y][foot_magnetometer_z]
    [FSR reading][IR reading][Proximity Reading]
-##ROS Scripts
+## ROS Scripts
 * **align_mocap.py**: Used to align mocap data and rosbag recordings, use with align.launch
 * **arduino_listener.py**: Used to read arduino data and republish it as a ROS message
 * **auto_annotate.py**: Annotates a matfile using a mocap output file (see auto_annotate.launch)
 * **fsr_annotate_2.py**: annotates data using just the FSR input
 * **create_data_combos.py**: creates matfiles using subset of the available measurements (see create_data.launch)
-##Matlab Scripts
+## Matlab Scripts
 * **bigOlClassifierScript2**: creates and evaluates all possible classifiers
 * **create_anfis_list**: reads available files in ~/full_data and creates a list of classifiers to test
 * **build_anfis_classifier_loop.m**: for every classifier in the list created with create_anfis_list, build and evaluate the
@@ -138,7 +138,7 @@ measurements
 * **create_and_evaluate_classifier.m**: creates a classifier based on a given workspace, evaluates the classifier and saves the results
 * **create_anfis_classifier.m**: splits data into test and training data, builds a classifier and saves the workspace
 * **plots_and_stats.m**: loads a built classifier, evaluates it, and creates a graph of its performance 
-###Unused/Deprecated
+### Unused/Deprecated
 HMM classifiers, can be used for reference
 * **create_single_classifier.py**
 * **create_distributed_classifier.py**
@@ -148,5 +148,5 @@ HMM classifiers, can be used for reference
 * **test_classifiers.distributed.py**
 * **create_anfis_classifier_phase.m**
 * **create_anfis_classifier_normal.m**
-###Random
+### Random
 * **fsr_annotate.py: see fsr_annotate_2.py**
